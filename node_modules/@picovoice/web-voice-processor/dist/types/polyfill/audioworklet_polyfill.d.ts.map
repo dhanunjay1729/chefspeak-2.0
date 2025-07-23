@@ -1,0 +1,1 @@
+{"version":3,"file":"audioworklet_polyfill.d.ts","sourceRoot":"","sources":["../../../src/polyfill/audioworklet_polyfill.ts"],"names":[],"mappings":"AAWA,KAAK,iBAAiB,GAAG;IACvB,IAAI,CAAC,EAAE;QACL,SAAS,CAAC,EAAE,CAAC,KAAK,EAAE,YAAY,CAAC;YAAE,MAAM,EAAE,YAAY,EAAE,CAAA;SAAE,CAAC,KAAK,IAAI,CAAC;KACvE,CAAA;CACF,CAAC"}
