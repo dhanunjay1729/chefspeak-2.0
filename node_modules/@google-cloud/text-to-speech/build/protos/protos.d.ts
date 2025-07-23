@@ -460,9 +460,6 @@ export namespace google {
                     /** AdvancedVoiceOptions lowLatencyJourneySynthesis. */
                     public lowLatencyJourneySynthesis?: (boolean|null);
 
-                    /** AdvancedVoiceOptions _lowLatencyJourneySynthesis. */
-                    public _lowLatencyJourneySynthesis?: "lowLatencyJourneySynthesis";
-
                     /**
                      * Creates a new AdvancedVoiceOptions instance using the specified properties.
                      * @param [properties] Properties to set
@@ -578,9 +575,6 @@ export namespace google {
                     /** SynthesizeSpeechRequest advancedVoiceOptions. */
                     public advancedVoiceOptions?: (google.cloud.texttospeech.v1.IAdvancedVoiceOptions|null);
 
-                    /** SynthesizeSpeechRequest _advancedVoiceOptions. */
-                    public _advancedVoiceOptions?: "advancedVoiceOptions";
-
                     /**
                      * Creates a new SynthesizeSpeechRequest instance using the specified properties.
                      * @param [properties] Properties to set
@@ -690,15 +684,6 @@ export namespace google {
                     /** CustomPronunciationParams pronunciation. */
                     public pronunciation?: (string|null);
 
-                    /** CustomPronunciationParams _phrase. */
-                    public _phrase?: "phrase";
-
-                    /** CustomPronunciationParams _phoneticEncoding. */
-                    public _phoneticEncoding?: "phoneticEncoding";
-
-                    /** CustomPronunciationParams _pronunciation. */
-                    public _pronunciation?: "pronunciation";
-
                     /**
                      * Creates a new CustomPronunciationParams instance using the specified properties.
                      * @param [properties] Properties to set
@@ -783,7 +768,9 @@ export namespace google {
                     enum PhoneticEncoding {
                         PHONETIC_ENCODING_UNSPECIFIED = 0,
                         PHONETIC_ENCODING_IPA = 1,
-                        PHONETIC_ENCODING_X_SAMPA = 2
+                        PHONETIC_ENCODING_X_SAMPA = 2,
+                        PHONETIC_ENCODING_JAPANESE_YOMIGANA = 3,
+                        PHONETIC_ENCODING_PINYIN = 4
                     }
                 }
 
@@ -1093,6 +1080,9 @@ export namespace google {
                     /** SynthesisInput text */
                     text?: (string|null);
 
+                    /** SynthesisInput markup */
+                    markup?: (string|null);
+
                     /** SynthesisInput ssml */
                     ssml?: (string|null);
 
@@ -1115,6 +1105,9 @@ export namespace google {
                     /** SynthesisInput text. */
                     public text?: (string|null);
 
+                    /** SynthesisInput markup. */
+                    public markup?: (string|null);
+
                     /** SynthesisInput ssml. */
                     public ssml?: (string|null);
 
@@ -1125,7 +1118,7 @@ export namespace google {
                     public customPronunciations?: (google.cloud.texttospeech.v1.ICustomPronunciations|null);
 
                     /** SynthesisInput inputSource. */
-                    public inputSource?: ("text"|"ssml"|"multiSpeakerMarkup");
+                    public inputSource?: ("text"|"markup"|"ssml"|"multiSpeakerMarkup");
 
                     /**
                      * Creates a new SynthesisInput instance using the specified properties.
@@ -1667,7 +1660,7 @@ export namespace google {
                 interface ISynthesizeSpeechResponse {
 
                     /** SynthesizeSpeechResponse audioContent */
-                    audioContent?: (Uint8Array|string|null);
+                    audioContent?: (Uint8Array|Buffer|string|null);
                 }
 
                 /** Represents a SynthesizeSpeechResponse. */
@@ -1680,7 +1673,7 @@ export namespace google {
                     constructor(properties?: google.cloud.texttospeech.v1.ISynthesizeSpeechResponse);
 
                     /** SynthesizeSpeechResponse audioContent. */
-                    public audioContent: (Uint8Array|string);
+                    public audioContent: (Uint8Array|Buffer|string);
 
                     /**
                      * Creates a new SynthesizeSpeechResponse instance using the specified properties.
@@ -1983,6 +1976,9 @@ export namespace google {
 
                     /** StreamingSynthesisInput text */
                     text?: (string|null);
+
+                    /** StreamingSynthesisInput markup */
+                    markup?: (string|null);
                 }
 
                 /** Represents a StreamingSynthesisInput. */
@@ -1997,8 +1993,11 @@ export namespace google {
                     /** StreamingSynthesisInput text. */
                     public text?: (string|null);
 
+                    /** StreamingSynthesisInput markup. */
+                    public markup?: (string|null);
+
                     /** StreamingSynthesisInput inputSource. */
-                    public inputSource?: "text";
+                    public inputSource?: ("text"|"markup");
 
                     /**
                      * Creates a new StreamingSynthesisInput instance using the specified properties.
@@ -2188,7 +2187,7 @@ export namespace google {
                 interface IStreamingSynthesizeResponse {
 
                     /** StreamingSynthesizeResponse audioContent */
-                    audioContent?: (Uint8Array|string|null);
+                    audioContent?: (Uint8Array|Buffer|string|null);
                 }
 
                 /** Represents a StreamingSynthesizeResponse. */
@@ -2201,7 +2200,7 @@ export namespace google {
                     constructor(properties?: google.cloud.texttospeech.v1.IStreamingSynthesizeResponse);
 
                     /** StreamingSynthesizeResponse audioContent. */
-                    public audioContent: (Uint8Array|string);
+                    public audioContent: (Uint8Array|Buffer|string);
 
                     /**
                      * Creates a new StreamingSynthesizeResponse instance using the specified properties.
@@ -3086,9 +3085,6 @@ export namespace google {
                     /** AdvancedVoiceOptions lowLatencyJourneySynthesis. */
                     public lowLatencyJourneySynthesis?: (boolean|null);
 
-                    /** AdvancedVoiceOptions _lowLatencyJourneySynthesis. */
-                    public _lowLatencyJourneySynthesis?: "lowLatencyJourneySynthesis";
-
                     /**
                      * Creates a new AdvancedVoiceOptions instance using the specified properties.
                      * @param [properties] Properties to set
@@ -3210,9 +3206,6 @@ export namespace google {
                     /** SynthesizeSpeechRequest advancedVoiceOptions. */
                     public advancedVoiceOptions?: (google.cloud.texttospeech.v1beta1.IAdvancedVoiceOptions|null);
 
-                    /** SynthesizeSpeechRequest _advancedVoiceOptions. */
-                    public _advancedVoiceOptions?: "advancedVoiceOptions";
-
                     /**
                      * Creates a new SynthesizeSpeechRequest instance using the specified properties.
                      * @param [properties] Properties to set
@@ -3330,15 +3323,6 @@ export namespace google {
 
                     /** CustomPronunciationParams pronunciation. */
                     public pronunciation?: (string|null);
-
-                    /** CustomPronunciationParams _phrase. */
-                    public _phrase?: "phrase";
-
-                    /** CustomPronunciationParams _phoneticEncoding. */
-                    public _phoneticEncoding?: "phoneticEncoding";
-
-                    /** CustomPronunciationParams _pronunciation. */
-                    public _pronunciation?: "pronunciation";
 
                     /**
                      * Creates a new CustomPronunciationParams instance using the specified properties.
@@ -4308,7 +4292,7 @@ export namespace google {
                 interface ISynthesizeSpeechResponse {
 
                     /** SynthesizeSpeechResponse audioContent */
-                    audioContent?: (Uint8Array|string|null);
+                    audioContent?: (Uint8Array|Buffer|string|null);
 
                     /** SynthesizeSpeechResponse timepoints */
                     timepoints?: (google.cloud.texttospeech.v1beta1.ITimepoint[]|null);
@@ -4327,7 +4311,7 @@ export namespace google {
                     constructor(properties?: google.cloud.texttospeech.v1beta1.ISynthesizeSpeechResponse);
 
                     /** SynthesizeSpeechResponse audioContent. */
-                    public audioContent: (Uint8Array|string);
+                    public audioContent: (Uint8Array|Buffer|string);
 
                     /** SynthesizeSpeechResponse timepoints. */
                     public timepoints: google.cloud.texttospeech.v1beta1.ITimepoint[];
@@ -4932,7 +4916,7 @@ export namespace google {
                 interface IStreamingSynthesizeResponse {
 
                     /** StreamingSynthesizeResponse audioContent */
-                    audioContent?: (Uint8Array|string|null);
+                    audioContent?: (Uint8Array|Buffer|string|null);
                 }
 
                 /** Represents a StreamingSynthesizeResponse. */
@@ -4945,7 +4929,7 @@ export namespace google {
                     constructor(properties?: google.cloud.texttospeech.v1beta1.IStreamingSynthesizeResponse);
 
                     /** StreamingSynthesizeResponse audioContent. */
-                    public audioContent: (Uint8Array|string);
+                    public audioContent: (Uint8Array|Buffer|string);
 
                     /**
                      * Creates a new StreamingSynthesizeResponse instance using the specified properties.
@@ -6049,6 +6033,9 @@ export namespace google {
 
             /** Publishing protoReferenceDocumentationUri */
             protoReferenceDocumentationUri?: (string|null);
+
+            /** Publishing restReferenceDocumentationUri */
+            restReferenceDocumentationUri?: (string|null);
         }
 
         /** Represents a Publishing. */
@@ -6089,6 +6076,9 @@ export namespace google {
 
             /** Publishing protoReferenceDocumentationUri. */
             public protoReferenceDocumentationUri: string;
+
+            /** Publishing restReferenceDocumentationUri. */
+            public restReferenceDocumentationUri: string;
 
             /**
              * Creates a new Publishing instance using the specified properties.
@@ -10307,6 +10297,9 @@ export namespace google {
 
             /** ServiceOptions .google.api.oauthScopes */
             ".google.api.oauthScopes"?: (string|null);
+
+            /** ServiceOptions .google.api.apiVersion */
+            ".google.api.apiVersion"?: (string|null);
         }
 
         /** Represents a ServiceOptions. */
@@ -10558,7 +10551,7 @@ export namespace google {
             doubleValue?: (number|null);
 
             /** UninterpretedOption stringValue */
-            stringValue?: (Uint8Array|string|null);
+            stringValue?: (Uint8Array|Buffer|string|null);
 
             /** UninterpretedOption aggregateValue */
             aggregateValue?: (string|null);
@@ -10589,7 +10582,7 @@ export namespace google {
             public doubleValue: number;
 
             /** UninterpretedOption stringValue. */
-            public stringValue: (Uint8Array|string);
+            public stringValue: (Uint8Array|Buffer|string);
 
             /** UninterpretedOption aggregateValue. */
             public aggregateValue: string;
@@ -11728,7 +11721,7 @@ export namespace google {
             type_url?: (string|null);
 
             /** Any value */
-            value?: (Uint8Array|string|null);
+            value?: (Uint8Array|Buffer|string|null);
         }
 
         /** Represents an Any. */
@@ -11744,7 +11737,7 @@ export namespace google {
             public type_url: string;
 
             /** Any value. */
-            public value: (Uint8Array|string);
+            public value: (Uint8Array|Buffer|string);
 
             /**
              * Creates a new Any instance using the specified properties.

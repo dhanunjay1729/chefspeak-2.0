@@ -4,23 +4,44 @@ import textToSpeech from "@google-cloud/text-to-speech";
 import fs from "fs";
 import util from "util";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// Fix __dirname in ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+console.log("🐛 __dirname resolved to:", __dirname);
 
 dotenv.config();
+console.log("🐛 .env loaded, NODE_ENV:", process.env.NODE_ENV);
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const client = new textToSpeech.TextToSpeechClient({
-  keyFilename: "./google-tts-key.json", // path to your JSON key file
-});
+console.log("🐛 Setting up Google TTS client...");
+const keyPath = path.join(__dirname, "google-tts-key.json");
+console.log("🐛 Using key file at:", keyPath);
 
-// Default route for the root path
+let client;
+try {
+  client = new textToSpeech.TextToSpeechClient({
+    keyFilename: keyPath,
+  });
+  console.log("✅ Google TTS client initialized successfully");
+} catch (err) {
+  console.error("❌ Failed to initialize Google TTS client:", err);
+}
+
 app.get("/", (req, res) => {
+  console.log("🐛 GET / called");
   res.send("Welcome to the ChefSpeak Text-to-Speech API!");
 });
 
 app.post("/api/speak", async (req, res) => {
+  console.log("🐛 POST /api/speak hit with body:", req.body);
+
   const { text, language } = req.body;
 
   const languageVoiceMap = {
@@ -30,13 +51,19 @@ app.post("/api/speak", async (req, res) => {
     tamil: "ta-IN-Standard-A",
   };
 
-  const voiceName = languageVoiceMap[language?.toLowerCase().trim()];
+  const voiceName = languageVoiceMap[(language || "").toLowerCase().trim()];
 
-  // Validate input
   if (!text || !voiceName) {
-    console.error("❌ Invalid input:", { text, language });
+    console.error("❌ Invalid input:", { text, language, voiceName });
     return res.status(400).json({ error: "Missing or invalid text/language" });
   }
+
+  console.log("🐛 Building TTS request:", {
+    text,
+    language,
+    voiceName,
+    languageCode: voiceName.split("-").slice(0, 2).join("-"),
+  });
 
   const request = {
     input: { text },
@@ -47,24 +74,21 @@ app.post("/api/speak", async (req, res) => {
     audioConfig: { audioEncoding: "MP3" },
   };
 
-  // Log the request being sent to Google TTS
-  console.log("🔄 Request to Google TTS:", {
-    text,
-    language,
-    voiceName,
-  });
-
   try {
+    console.log("🐛 Sending request to Google TTS API...");
     const [response] = await client.synthesizeSpeech(request);
-    res.set("Content-Type", "audio/mp3");
+    console.log("✅ Got response from Google TTS. Audio length:", response.audioContent?.length || 0);
+
+    res.set("Content-Type", "audio/mpeg");
+    console.log("🐛 Sending audio back to client...");
     res.send(response.audioContent);
   } catch (err) {
-    console.error("TTS Error:", err);
+    console.error("🔥 TTS Error (inside /api/speak):", err);
     res.status(500).send("TTS failed");
   }
 });
 
 const PORT = 3001;
 app.listen(PORT, () => {
-  console.log(`TTS proxy server running on http://localhost:${PORT}`);
+  console.log(`✅ TTS proxy server running on http://localhost:${PORT}`);
 });
