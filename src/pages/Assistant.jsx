@@ -1,4 +1,3 @@
-// src/pages/Assistant.jsx
 import { useEffect, useState, useRef } from "react";
 import { Button } from "../components/ui/button";
 import { Mic, Loader2, Volume2 } from "lucide-react";
@@ -6,6 +5,7 @@ import { motion } from "framer-motion";
 import { useAuth } from "../contexts/AuthContext";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
+import WakeWordDetector from "../components/ui/WakeWordDetector";
 
 // Add the speakViaGoogleTTS function
 const speakViaGoogleTTS = async (text, language) => {
@@ -70,7 +70,6 @@ export default function Assistant() {
     speakViaGoogleTTS(steps[currentStepIndex], language);
   };
 
-
   const handleMicClick = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -97,15 +96,11 @@ export default function Assistant() {
       if (steps.length > 0) {
         // Handle as command
         if (spokenText.includes("next")) {
-          const next = Math.min(currentStepIndex + 1, steps.length - 1);
-          setCurrentStepIndex(next);
-          speakViaGoogleTTS(steps[next], language); // Replace speakSteps([...])
+          handleNext();
         } else if (spokenText.includes("repeat")) {
-          speakViaGoogleTTS(steps[currentStepIndex], language); // Replace speakSteps([...])
+          handleRepeat();
         } else if (spokenText.includes("back") || spokenText.includes("previous")) {
-          const prev = Math.max(0, currentStepIndex - 1);
-          setCurrentStepIndex(prev);
-          speakViaGoogleTTS(steps[prev], language); // Replace speakSteps([...])
+          handleBack();
         } else {
           alert("Unrecognized command. Please say 'next', 'repeat', or 'back'.");
         }
@@ -132,7 +127,7 @@ export default function Assistant() {
           Authorization: `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
-          model: "gpt-4o",
+          model: "gpt-4",
           messages: [
             {
               role: "system",
@@ -167,9 +162,71 @@ export default function Assistant() {
     }
   };
 
+// Replace your handleWakeWordDetected function with this:
+const handleWakeWordDetected = () => {
+  console.log("Wake word detected! Starting voice assistant...");
+  
+  // Instead of just setting a flag, we need to start speech recognition
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert("Speech recognition not supported in this browser.");
+    return;
+  }
+
+  const recognition = new SpeechRecognition();
+  recognition.lang = steps.length > 0 ? "en-US" : languageMap[language] || "en-IN";
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognitionRef.current = recognition;
+  setIsListening(true);
+
+  // Add a slight delay to allow the system to prepare
+  setTimeout(() => {
+    recognition.start();
+    console.log("Started listening for dish command...");
+  }, 500);
+
+  recognition.onresult = async (event) => {
+    const spokenText = event.results[0][0].transcript.toLowerCase();
+    console.log(`Command recognized: "${spokenText}"`);
+    setQuery(spokenText);
+    recognition.stop();
+    setIsListening(false);
+
+    if (steps.length > 0) {
+      // Handle as command
+      if (spokenText.includes("next")) {
+        handleNext();
+      } else if (spokenText.includes("repeat")) {
+        handleRepeat();
+      } else if (spokenText.includes("back") || spokenText.includes("previous")) {
+        handleBack();
+      } else {
+        alert("Unrecognized command. Please say 'next', 'repeat', or 'back'.");
+      }
+    } else {
+      // Handle as dish query
+      await fetchRecipeSteps(spokenText);
+    }
+  };
+
+  recognition.onerror = (event) => {
+    console.error("Speech recognition error:", event.error);
+    setIsListening(false);
+  };
+
+  recognition.onend = () => {
+    console.log("Speech recognition ended");
+    setIsListening(false);
+  };
+};
+
   return (
     <div className="min-h-screen bg-white py-10 px-4 flex flex-col items-center">
       <h1 className="text-2xl font-bold mb-4">ChefSpeak Assistant</h1>
+
+      <WakeWordDetector onWakeWordDetected={handleWakeWordDetected} />
 
       <Button
         onClick={handleMicClick}
@@ -204,14 +261,12 @@ export default function Assistant() {
           </motion.div>
         ))}
       </div>
-    
 
       <div className="fixed bottom-4 left-0 right-0 flex justify-center gap-4 px-4 z-50">
         <Button className="bg-gray-800 hover:bg-gray-900 text-white font-semibold rounded-full px-6 py-3 shadow-xl transition-all duration-300" onClick={handleBack}>⬅ Back</Button>
         <Button className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold rounded-full px-6 py-3 shadow-xl transition-all duration-300" onClick={handleRepeat}>🔁 Repeat</Button>
         <Button className="bg-green-600 hover:bg-green-700 text-white font-semibold rounded-full px-6 py-3 shadow-xl transition-all duration-300" onClick={handleNext}>➡ Next</Button>
       </div>
-
-</div>
+    </div>
   );
 }
