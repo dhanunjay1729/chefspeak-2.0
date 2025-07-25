@@ -7,7 +7,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import WakeWordDetector from "../components/ui/WakeWordDetector";
 
-// Add the speakViaGoogleTTS function
+// Google TTS
 const speakViaGoogleTTS = async (text, language) => {
   const response = await fetch("http://localhost:3001/api/speak", {
     method: "POST",
@@ -84,7 +84,6 @@ export default function Assistant() {
 
     recognitionRef.current = recognition;
     setIsListening(true);
-
     recognition.start();
 
     recognition.onresult = async (event) => {
@@ -94,18 +93,11 @@ export default function Assistant() {
       setIsListening(false);
 
       if (steps.length > 0) {
-        // Handle as command
-        if (spokenText.includes("next")) {
-          handleNext();
-        } else if (spokenText.includes("repeat")) {
-          handleRepeat();
-        } else if (spokenText.includes("back") || spokenText.includes("previous")) {
-          handleBack();
-        } else {
-          alert("Unrecognized command. Please say 'next', 'repeat', or 'back'.");
-        }
+        if (spokenText.includes("next")) handleNext();
+        else if (spokenText.includes("repeat")) handleRepeat();
+        else if (spokenText.includes("back") || spokenText.includes("previous")) handleBack();
+        else alert("Unrecognized command. Please say 'next', 'repeat', or 'back'.");
       } else {
-        // Handle as dish query
         await fetchRecipeSteps(spokenText);
       }
     };
@@ -116,6 +108,7 @@ export default function Assistant() {
     };
   };
 
+  // ✅ Streaming GPT response
   const fetchRecipeSteps = async (spokenText) => {
     try {
       const prompt = `Give me a detailed step-by-step recipe for making ${spokenText}. Respond only in ${language}. No bold letters, or special characters. Just clear, numbered steps.`;
@@ -127,25 +120,56 @@ export default function Assistant() {
           Authorization: `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
-          model: "gpt-4",
+          model: "gpt-4o-mini",
           messages: [
             {
               role: "system",
               content: `You are a multilingual professional chef assistant. Always give clear, numbered steps in the user's preferred language: ${language}.`,
             },
-            {
-              role: "user",
-              content: prompt,
-            },
+            { role: "user", content: prompt },
           ],
           temperature: 0.7,
+          stream: true,
         }),
       });
 
-      const data = await response.json();
-      const text = data.choices?.[0]?.message?.content || "No response from assistant.";
+      if (!response.ok || !response.body) {
+        throw new Error("OpenAI streaming response failed");
+      }
 
-      const parsedSteps = text
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buffer = "";
+      let fullText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split("\n");
+        buffer = lines.pop(); // hold incomplete line
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith("data: ")) {
+            const data = trimmed.replace(/^data: /, "");
+            if (data === "[DONE]") break;
+            try {
+              const json = JSON.parse(data);
+              const token = json.choices?.[0]?.delta?.content;
+              if (token) {
+                fullText += token;
+              }
+            } catch (err) {
+              console.error("Skipping invalid JSON chunk", err);
+            }
+          }
+        }
+      }
+
+      // parse the full streamed text into steps
+      const parsedSteps = fullText
         .split(/\n+/)
         .filter((line) => line.trim().match(/^\d+[\).]/))
         .map((step) => step.trim());
@@ -153,7 +177,6 @@ export default function Assistant() {
       setSteps(parsedSteps);
       setCurrentStepIndex(0);
 
-      // Read out the first step immediately
       if (parsedSteps.length > 0) {
         speakViaGoogleTTS(parsedSteps[0], language);
       }
@@ -162,65 +185,52 @@ export default function Assistant() {
     }
   };
 
-// Replace your handleWakeWordDetected function with this:
-const handleWakeWordDetected = () => {
-  console.log("Wake word detected! Starting voice assistant...");
-  
-  // Instead of just setting a flag, we need to start speech recognition
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    alert("Speech recognition not supported in this browser.");
-    return;
-  }
-
-  const recognition = new SpeechRecognition();
-  recognition.lang = steps.length > 0 ? "en-US" : languageMap[language] || "en-IN";
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
-
-  recognitionRef.current = recognition;
-  setIsListening(true);
-
-  // Add a slight delay to allow the system to prepare
-  setTimeout(() => {
-    recognition.start();
-    console.log("Started listening for dish command...");
-  }, 500);
-
-  recognition.onresult = async (event) => {
-    const spokenText = event.results[0][0].transcript.toLowerCase();
-    console.log(`Command recognized: "${spokenText}"`);
-    setQuery(spokenText);
-    recognition.stop();
-    setIsListening(false);
-
-    if (steps.length > 0) {
-      // Handle as command
-      if (spokenText.includes("next")) {
-        handleNext();
-      } else if (spokenText.includes("repeat")) {
-        handleRepeat();
-      } else if (spokenText.includes("back") || spokenText.includes("previous")) {
-        handleBack();
-      } else {
-        alert("Unrecognized command. Please say 'next', 'repeat', or 'back'.");
-      }
-    } else {
-      // Handle as dish query
-      await fetchRecipeSteps(spokenText);
+  const handleWakeWordDetected = () => {
+    console.log("Wake word detected! Starting voice assistant...");
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech recognition not supported in this browser.");
+      return;
     }
-  };
+    const recognition = new SpeechRecognition();
+    recognition.lang = steps.length > 0 ? "en-US" : languageMap[language] || "en-IN";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognitionRef.current = recognition;
+    setIsListening(true);
 
-  recognition.onerror = (event) => {
-    console.error("Speech recognition error:", event.error);
-    setIsListening(false);
-  };
+    setTimeout(() => {
+      recognition.start();
+      console.log("Started listening for dish command...");
+    }, 500);
 
-  recognition.onend = () => {
-    console.log("Speech recognition ended");
-    setIsListening(false);
+    recognition.onresult = async (event) => {
+      const spokenText = event.results[0][0].transcript.toLowerCase();
+      console.log(`Command recognized: "${spokenText}"`);
+      setQuery(spokenText);
+      recognition.stop();
+      setIsListening(false);
+
+      if (steps.length > 0) {
+        if (spokenText.includes("next")) handleNext();
+        else if (spokenText.includes("repeat")) handleRepeat();
+        else if (spokenText.includes("back") || spokenText.includes("previous")) handleBack();
+        else alert("Unrecognized command. Please say 'next', 'repeat', or 'back'.");
+      } else {
+        await fetchRecipeSteps(spokenText);
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.error("Speech recognition error:", event.error);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      console.log("Speech recognition ended");
+      setIsListening(false);
+    };
   };
-};
 
   return (
     <div className="min-h-screen bg-white py-10 px-4 flex flex-col items-center">
