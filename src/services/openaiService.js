@@ -40,6 +40,43 @@ export class OpenAIService {
     return this.parseStreamingResponse(response);
   }
 
+  // ✅ NEW FUNCTION: Fetch approximate nutritional info
+  async fetchNutritionInfo(dish, people, extraNotes, language) {
+    let prompt = `Give me an approximate nutritional breakdown (per serving) for ${dish} made for ${people} people.`;
+    if (extraNotes.trim()) {
+      prompt += ` Additional notes: ${extraNotes}.`;
+    }
+    prompt += ` Include approximate values for calories, protein, fat, and carbohydrates. Respond only in ${language}. No bold letters, just a clear list.`;
+
+    console.log("🔍 Fetching nutrition info for:", { dish, people, extraNotes, language });
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${this.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `You are a multilingual professional chef assistant. Always return nutrition facts in the user's preferred language: ${language}.`,
+          },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.3,
+        stream: true,
+      }),
+    });
+
+    if (!response.ok || !response.body) {
+      throw new Error("OpenAI streaming response failed");
+    }
+
+    return this.parseStreamingResponse(response);
+  }
+
   async parseStreamingResponse(response) {
     const reader = response.body.getReader();
     const decoder = new TextDecoder("utf-8");

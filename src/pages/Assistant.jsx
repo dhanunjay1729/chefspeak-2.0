@@ -8,14 +8,26 @@ import { RecipeForm } from "../components/RecipeForm";
 import { RecipeStep } from "../components/RecipeStep";
 import { TimerDisplay } from "../components/TimerDisplay";
 import { NavigationControls } from "../components/NavigationControls";
+import { NutritionInfo } from "../components/NutritionInfo"; // Add import
 import DishImage from "../components/DishImage";
 
 export default function Assistant() {
   const { user } = useAuth();
   const [language, setLanguage] = useState("English");
-  const [selectedDish, setSelectedDish] = useState(""); // Add this state
+  const [selectedDish, setSelectedDish] = useState("");
   
-  const { steps, currentStepIndex, isLoading, fetchRecipeSteps, handleNext, handleBack } = useRecipe();
+  const { 
+    steps, 
+    currentStepIndex, 
+    isLoading, 
+    nutritionInfo, 
+    isLoadingNutrition,
+    fetchRecipeSteps, 
+    fetchNutritionInfo, // Add this
+    handleNext, 
+    handleBack 
+  } = useRecipe();
+  
   const { remaining, startTimer } = useTimer();
   
   const ttsService = new TTSService();
@@ -29,10 +41,22 @@ export default function Assistant() {
   }, [user]);
 
   const handleFormSubmit = async ({ dishName, servings, notes }) => {
-    setSelectedDish(dishName); // Store the dish name
-    const enrichedSteps = await fetchRecipeSteps(dishName, servings, notes, language);
-    if (enrichedSteps.length > 0) {
-      await ttsService.speak(enrichedSteps[0].text, language);
+    setSelectedDish(dishName);
+    
+    try {
+      // Fetch both recipe steps and nutrition info simultaneously
+      console.log("🔄 Fetching recipe and nutrition info...");
+      
+      const [enrichedSteps] = await Promise.all([
+        fetchRecipeSteps(dishName, servings, notes, language),
+        fetchNutritionInfo(dishName, servings, notes, language)
+      ]);
+      
+      if (enrichedSteps.length > 0) {
+        await ttsService.speak(enrichedSteps[0].text, language);
+      }
+    } catch (error) {
+      console.error("Error fetching recipe data:", error);
     }
   };
 
@@ -66,13 +90,20 @@ export default function Assistant() {
 
       <RecipeForm onSubmit={handleFormSubmit} isLoading={isLoading} />
 
-      {/* Add DishImage component here */}
+      {/* Dish Image */}
       {selectedDish && (
         <div className="mb-6">
           <DishImage dishName={selectedDish} />
         </div>
       )}
 
+      {/* Nutrition Information */}
+      <NutritionInfo 
+        nutritionInfo={nutritionInfo} 
+        isLoading={isLoadingNutrition} 
+      />
+
+      {/* Recipe Steps */}
       <div className="space-y-3 w-full max-w-md">
         {steps.map((step, index) => (
           <RecipeStep
