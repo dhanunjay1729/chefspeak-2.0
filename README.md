@@ -1,16 +1,54 @@
-<<<<<<< HEAD
-# React + Vite
+# 🍳 ChefSpeak – Your Voice‑Enabled Cooking Companion
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+ChefSpeak is a **multilingual, voice‑assisted recipe app** designed to make cooking simpler, smarter, and hands‑free.
+It’s built to go **beyond a simple LLM wrapper**, combining AI‑generated recipes, dish images, and interactive cooking features — all in one place.
 
-Currently, two official plugins are available:
+> ⚠️ **Note:** ChefSpeak is currently in **active development**. Features are being added and improved continuously.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ✨ Features (Current & In Progress)
 
-## Expanding the ESLint configuration
+✅ **AI‑Generated Recipes**
+Type (or speak) the dish name, specify the number of servings, and add notes — ChefSpeak fetches clear, numbered step‑by‑step instructions in your preferred language.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
-=======
-# ChefSpeak
->>>>>>> db1c535e664b66c985486da06d41b1afea02cb67
+✅ **Dish Images Integration**
+Automatically fetches a high‑quality image of the dish from Unsplash to give you a visual reference.
+
+✅ **Multilingual Support**
+Select your preferred language (e.g., English, Telugu, Hindi) and ChefSpeak will respond and narrate accordingly.
+
+✅ **Voice Navigation**
+After loading the recipe, you can say commands like **“next”**, **“repeat”**, and **“back”** to move through steps without touching your screen.
+
+✅ **Timer Ready** *(planned)*
+Steps that mention cooking durations will soon have a one‑tap **Start Timer** button — making it easier to follow along.
+
+✅ **Nutrition Insights** *(in development)*
+Get approximate calories, protein, carbs, and fat for each recipe per serving, powered by GPT.
+
+✅ **Personalization & Saved Recipes** *(planned)*
+Mark your favorite recipes, add notes like “reduce chili next time,” and build your personal cookbook.
+
+---
+
+## 🚀 Tech Stack
+
+* **Frontend:** React + Vite + Tailwind CSS
+* **Voice & AI:**
+
+  * OpenAI GPT‑4o‑mini for recipe steps and nutrition info
+  * Google Text‑to‑Speech (TTS) for narration
+* **Image Fetching:** Unsplash API
+* **Authentication & Storage:** Firebase (planned for user dashboard)
+
+
+## 🤝 Contributing
+
+ChefSpeak is still in its early phase.
+Contributions, ideas, and feedback are very welcome!
+Feel free to open issues or submit pull requests.
+
+---
+
+
+
+
