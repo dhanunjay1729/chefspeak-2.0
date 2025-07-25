@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { useAuth } from "../contexts/AuthContext";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
-import WakeWordDetector from "../components/ui/WakeWordDetector";
 
 // Google TTS
 const speakViaGoogleTTS = async (text, language) => {
@@ -168,7 +167,6 @@ export default function Assistant() {
         }
       }
 
-      // parse the full streamed text into steps
       const parsedSteps = fullText
         .split(/\n+/)
         .filter((line) => line.trim().match(/^\d+[\).]/))
@@ -185,58 +183,9 @@ export default function Assistant() {
     }
   };
 
-  const handleWakeWordDetected = () => {
-    console.log("Wake word detected! Starting voice assistant...");
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Speech recognition not supported in this browser.");
-      return;
-    }
-    const recognition = new SpeechRecognition();
-    recognition.lang = steps.length > 0 ? "en-US" : languageMap[language] || "en-IN";
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    recognitionRef.current = recognition;
-    setIsListening(true);
-
-    setTimeout(() => {
-      recognition.start();
-      console.log("Started listening for dish command...");
-    }, 500);
-
-    recognition.onresult = async (event) => {
-      const spokenText = event.results[0][0].transcript.toLowerCase();
-      console.log(`Command recognized: "${spokenText}"`);
-      setQuery(spokenText);
-      recognition.stop();
-      setIsListening(false);
-
-      if (steps.length > 0) {
-        if (spokenText.includes("next")) handleNext();
-        else if (spokenText.includes("repeat")) handleRepeat();
-        else if (spokenText.includes("back") || spokenText.includes("previous")) handleBack();
-        else alert("Unrecognized command. Please say 'next', 'repeat', or 'back'.");
-      } else {
-        await fetchRecipeSteps(spokenText);
-      }
-    };
-
-    recognition.onerror = (event) => {
-      console.error("Speech recognition error:", event.error);
-      setIsListening(false);
-    };
-
-    recognition.onend = () => {
-      console.log("Speech recognition ended");
-      setIsListening(false);
-    };
-  };
-
   return (
     <div className="min-h-screen bg-white py-10 px-4 flex flex-col items-center">
       <h1 className="text-2xl font-bold mb-4">ChefSpeak Assistant</h1>
-
-      <WakeWordDetector onWakeWordDetected={handleWakeWordDetected} />
 
       <Button
         onClick={handleMicClick}
