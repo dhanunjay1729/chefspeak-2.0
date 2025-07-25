@@ -8,10 +8,12 @@ import { RecipeForm } from "../components/RecipeForm";
 import { RecipeStep } from "../components/RecipeStep";
 import { TimerDisplay } from "../components/TimerDisplay";
 import { NavigationControls } from "../components/NavigationControls";
+import DishImage from "../components/DishImage";
 
 export default function Assistant() {
   const { user } = useAuth();
   const [language, setLanguage] = useState("English");
+  const [selectedDish, setSelectedDish] = useState(""); // Add this state
   
   const { steps, currentStepIndex, isLoading, fetchRecipeSteps, handleNext, handleBack } = useRecipe();
   const { remaining, startTimer } = useTimer();
@@ -27,6 +29,7 @@ export default function Assistant() {
   }, [user]);
 
   const handleFormSubmit = async ({ dishName, servings, notes }) => {
+    setSelectedDish(dishName); // Store the dish name
     const enrichedSteps = await fetchRecipeSteps(dishName, servings, notes, language);
     if (enrichedSteps.length > 0) {
       await ttsService.speak(enrichedSteps[0].text, language);
@@ -62,6 +65,13 @@ export default function Assistant() {
       <h1 className="text-2xl font-bold mb-6">ChefSpeak Assistant</h1>
 
       <RecipeForm onSubmit={handleFormSubmit} isLoading={isLoading} />
+
+      {/* Add DishImage component here */}
+      {selectedDish && (
+        <div className="mb-6">
+          <DishImage dishName={selectedDish} />
+        </div>
+      )}
 
       <div className="space-y-3 w-full max-w-md">
         {steps.map((step, index) => (
