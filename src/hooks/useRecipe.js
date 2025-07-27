@@ -10,7 +10,7 @@ export function useRecipe() {
   const [nutritionInfo, setNutritionInfo] = useState(""); // Add nutrition state
   const [isLoadingNutrition, setIsLoadingNutrition] = useState(false); // Add loading state
 
-  const openAIService = new OpenAIService(import.meta.env.VITE_OPENAI_API_KEY);
+  const openAIService = new OpenAIService(import.meta.env.OPENAI_API_KEY);
 
   const fetchRecipeSteps = async (dish, people, extraNotes, language) => {
     try {

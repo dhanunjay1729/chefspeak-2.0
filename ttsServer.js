@@ -1,17 +1,7 @@
 import express from "express";
 import cors from "cors";
 import textToSpeech from "@google-cloud/text-to-speech";
-import fs from "fs";
-import util from "util";
 import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
-
-// Fix __dirname in ESM
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-console.log("🐛 __dirname resolved to:", __dirname);
 
 dotenv.config();
 console.log("🐛 .env loaded, NODE_ENV:", process.env.NODE_ENV);
@@ -21,13 +11,14 @@ app.use(cors());
 app.use(express.json());
 
 console.log("🐛 Setting up Google TTS client...");
-const keyPath = path.join(__dirname, "google-tts-key.json");
-console.log("🐛 Using key file at:", keyPath);
-
 let client;
 try {
   client = new textToSpeech.TextToSpeechClient({
-    keyFilename: keyPath,
+    credentials: {
+      client_email: process.env.GOOGLE_TTS_CLIENT_EMAIL,
+      private_key: process.env.GOOGLE_TTS_PRIVATE_KEY.replace(/\\n/g, "\n"),
+    },
+    projectId: process.env.GOOGLE_TTS_PROJECT_ID,
   });
   console.log("✅ Google TTS client initialized successfully");
 } catch (err) {
@@ -77,7 +68,10 @@ app.post("/api/speak", async (req, res) => {
   try {
     console.log("🐛 Sending request to Google TTS API...");
     const [response] = await client.synthesizeSpeech(request);
-    console.log("✅ Got response from Google TTS. Audio length:", response.audioContent?.length || 0);
+    console.log(
+      "✅ Got response from Google TTS. Audio length:",
+      response.audioContent?.length || 0
+    );
 
     res.set("Content-Type", "audio/mpeg");
     console.log("🐛 Sending audio back to client...");
