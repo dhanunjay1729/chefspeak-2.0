@@ -4,14 +4,12 @@ export class OpenAIService {
     this.apiKey = apiKey;
   }
 
-  async fetchRecipeSteps(dish, people, extraNotes, language) {
-    let prompt = `Give me a detailed step-by-step recipe for making ${dish} for ${people} people.`;
-    if (extraNotes.trim()) {
+  async fetchRecipeSteps(dish, people, extraNotes, language, opts = {}) {
+    let prompt = `Give me a clear, numbered, step-by-step recipe for ${dish} for ${people} people.`;
+    if (extraNotes && extraNotes.trim()) {
       prompt += ` Additional notes: ${extraNotes}.`;
     }
-    prompt += ` Respond only in ${language}. No bold letters or special characters. Just clear, numbered steps.`;
-
-    console.log("🔍 Fetching recipe for:", { dish, people, extraNotes, language });
+    prompt += ` Respond only in ${language}. No bold letters or special characters. Use one numbered step per line.`;
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -21,15 +19,15 @@ export class OpenAIService {
       },
       body: JSON.stringify({
         model: "gpt-4o-mini",
+        temperature: 0.5,
+        stream: true,
         messages: [
           {
             role: "system",
-            content: `You are a multilingual professional chef assistant. Always give clear, numbered steps in the user's preferred language: ${language}.`,
+            content: `You are a multilingual professional chef assistant. Output only cooking steps, numbered, in ${language}.`,
           },
           { role: "user", content: prompt },
         ],
-        temperature: 0.7,
-        stream: true,
       }),
     });
 
@@ -37,19 +35,18 @@ export class OpenAIService {
       throw new Error("OpenAI streaming response failed");
     }
 
-    return this.parseStreamingResponse(response);
+    // Stream tokens; surface them via callbacks.
+    const fullText = await this.parseStreamingResponse(response, opts);
+    return fullText;
   }
 
-  // ✅ NEW FUNCTION: Fetch approximate nutritional info
   async fetchNutritionInfo(dish, people, extraNotes, language) {
-    let prompt = `Give me an approximate nutritional breakdown (per serving) for ${dish} made for ${people} people.`;
-    if (extraNotes.trim()) {
+    let prompt = `Give me an approximate nutritional breakdown (per serving) for ${dish} for ${people} people.`;
+    if (extraNotes && extraNotes.trim()) {
       prompt += ` Additional notes: ${extraNotes}.`;
     }
     prompt += ` Include approximate values for calories, protein, fat, and carbohydrates. Respond only in ${language}. No bold letters, just a clear list.`;
 
-    console.log("🔍 Fetching nutrition info for:", { dish, people, extraNotes, language });
-
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -58,15 +55,15 @@ export class OpenAIService {
       },
       body: JSON.stringify({
         model: "gpt-4o-mini",
+        temperature: 0.2,
+        stream: true,
         messages: [
           {
             role: "system",
-            content: `You are a multilingual professional chef assistant. Always return nutrition facts in the user's preferred language: ${language}.`,
+            content: `You are a multilingual professional chef assistant. Return nutrition facts in ${language}.`,
           },
           { role: "user", content: prompt },
         ],
-        temperature: 0.3,
-        stream: true,
       }),
     });
 
@@ -74,10 +71,13 @@ export class OpenAIService {
       throw new Error("OpenAI streaming response failed");
     }
 
-    return this.parseStreamingResponse(response);
+    // We don’t need per-token updates for nutrition; just return the final text.
+    const fullText = await this.parseStreamingResponse(response);
+    return fullText;
   }
 
-  async parseStreamingResponse(response) {
+  async parseStreamingResponse(response, opts = {}) {
+    const { onText, onDone } = opts;
     const reader = response.body.getReader();
     const decoder = new TextDecoder("utf-8");
     let buffer = "";
@@ -89,26 +89,30 @@ export class OpenAIService {
       buffer += decoder.decode(value, { stream: true });
 
       const lines = buffer.split("\n");
-      buffer = lines.pop();
+      buffer = lines.pop(); // keep partial line in buffer
 
       for (const line of lines) {
         const trimmed = line.trim();
-        if (trimmed.startsWith("data: ")) {
-          const data = trimmed.replace(/^data: /, "");
-          if (data === "[DONE]") break;
-          try {
-            const json = JSON.parse(data);
-            const token = json.choices?.[0]?.delta?.content;
-            if (token) {
-              fullText += token;
-            }
-          } catch (err) {
-            console.error("Skipping invalid JSON chunk", err);
+        if (!trimmed.startsWith("data:")) continue;
+
+        const data = trimmed.slice(5).trim(); // after "data:"
+        if (data === "[DONE]") continue;
+
+        try {
+          const json = JSON.parse(data);
+          const delta = json.choices?.[0]?.delta;
+          const token = delta?.content || "";
+          if (token) {
+            fullText += token;
+            if (onText) onText(token);
           }
+        } catch {
+          // ignore malformed chunks
         }
       }
     }
 
+    if (onDone) onDone(fullText);
     return fullText;
   }
 }

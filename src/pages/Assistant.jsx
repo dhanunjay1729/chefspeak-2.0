@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+// src/pages/Assistant.jsx
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { TTSService } from "../services/ttsService";
 import { UserService } from "../services/userService";
@@ -8,79 +9,73 @@ import { RecipeForm } from "../components/RecipeForm";
 import { RecipeStep } from "../components/RecipeStep";
 import { TimerDisplay } from "../components/TimerDisplay";
 import { NavigationControls } from "../components/NavigationControls";
-import { NutritionInfo } from "../components/NutritionInfo"; // Add import
+import { NutritionInfo } from "../components/NutritionInfo";
 import DishImage from "../components/DishImage";
 
 export default function Assistant() {
   const { user } = useAuth();
   const [language, setLanguage] = useState("English");
   const [selectedDish, setSelectedDish] = useState("");
-  
-  const { 
-    steps, 
-    currentStepIndex, 
-    isLoading, 
-    nutritionInfo, 
+
+  const {
+    steps,
+    currentStepIndex,
+    isLoading,
+    nutritionInfo,
     isLoadingNutrition,
-    fetchRecipeSteps, 
-    fetchNutritionInfo, // Add this
-    handleNext, 
-    handleBack 
+    fetchRecipeSteps,
+    fetchNutritionInfo,
+    handleNext,
+    handleBack,
   } = useRecipe();
-  
+
   const { remaining, startTimer } = useTimer();
-  
   const ttsService = new TTSService();
+
+  const firstStepSpokenRef = useRef(false);
 
   useEffect(() => {
     const loadUserLanguage = async () => {
       const userLanguage = await UserService.getUserLanguage(user);
-      setLanguage(userLanguage);
+      setLanguage(userLanguage || "English");
     };
     loadUserLanguage();
   }, [user]);
 
+  // Speak as soon as the first step appears (don’t block UI)
+  useEffect(() => {
+    if (!firstStepSpokenRef.current && steps.length > 0) {
+      firstStepSpokenRef.current = true;
+      ttsService.speak(steps[0].text, language).catch(() => {});
+    }
+  }, [steps, language, ttsService]);
+
   const handleFormSubmit = async ({ dishName, servings, notes }) => {
     setSelectedDish(dishName);
-    
-    try {
-      // Fetch both recipe steps and nutrition info simultaneously
-      console.log("🔄 Fetching recipe and nutrition info...");
-      
-      const [enrichedSteps] = await Promise.all([
-        fetchRecipeSteps(dishName, servings, notes, language),
-        fetchNutritionInfo(dishName, servings, notes, language)
-      ]);
-      
-      if (enrichedSteps.length > 0) {
-        await ttsService.speak(enrichedSteps[0].text, language);
-      }
-    } catch (error) {
-      console.error("Error fetching recipe data:", error);
-    }
+    firstStepSpokenRef.current = false; // reset for new recipe
+
+    // Fire both, but do NOT await nutrition; steps stream to UI
+    fetchNutritionInfo(dishName, servings, notes, language).catch(() => {});
+    fetchRecipeSteps(dishName, servings, notes, language).catch(() => {});
   };
 
   const handleSpeak = (text) => {
-    ttsService.speak(text, language);
+    ttsService.speak(text, language).catch(() => {});
   };
 
   const handleNavigateNext = () => {
     const nextStep = handleNext();
-    if (nextStep) {
-      ttsService.speak(nextStep.text, language);
-    }
+    if (nextStep) ttsService.speak(nextStep.text, language).catch(() => {});
   };
 
   const handleNavigateBack = () => {
     const prevStep = handleBack();
-    if (prevStep) {
-      ttsService.speak(prevStep.text, language);
-    }
+    if (prevStep) ttsService.speak(prevStep.text, language).catch(() => {});
   };
 
   const handleRepeat = () => {
     if (steps[currentStepIndex]) {
-      ttsService.speak(steps[currentStepIndex].text, language);
+      ttsService.speak(steps[currentStepIndex].text, language).catch(() => {});
     }
   };
 
@@ -90,20 +85,14 @@ export default function Assistant() {
 
       <RecipeForm onSubmit={handleFormSubmit} isLoading={isLoading} />
 
-      {/* Dish Image */}
       {selectedDish && (
         <div className="mb-6">
           <DishImage dishName={selectedDish} />
         </div>
       )}
 
-      {/* Nutrition Information */}
-      <NutritionInfo 
-        nutritionInfo={nutritionInfo} 
-        isLoading={isLoadingNutrition} 
-      />
+      <NutritionInfo nutritionInfo={nutritionInfo} isLoading={isLoadingNutrition} />
 
-      {/* Recipe Steps */}
       <div className="space-y-3 w-full max-w-md">
         {steps.map((step, index) => (
           <RecipeStep
@@ -115,6 +104,15 @@ export default function Assistant() {
             onStartTimer={startTimer}
           />
         ))}
+
+        {/* Simple skeleton while waiting for first streamed step */}
+        {isLoading && steps.length === 0 && (
+          <div className="animate-pulse space-y-2">
+            <div className="h-4 bg-gray-200 rounded" />
+            <div className="h-4 bg-gray-200 rounded w-5/6" />
+            <div className="h-4 bg-gray-200 rounded w-4/6" />
+          </div>
+        )}
       </div>
 
       <TimerDisplay remaining={remaining} />

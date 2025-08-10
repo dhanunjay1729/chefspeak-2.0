@@ -1,31 +1,67 @@
 // src/hooks/useRecipe.js
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { OpenAIService } from "../services/openaiService";
 import { RecipeParser } from "../utils/recipeParser";
+
+// De-dupe steps by their trimmed text (guards against stream + final double-adds)
+const dedupeByText = (arr) => {
+  const seen = new Set();
+  return arr.filter((s) => {
+    const key = (s.text || "").trim();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
 
 export function useRecipe() {
   const [steps, setSteps] = useState([]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [nutritionInfo, setNutritionInfo] = useState(""); // Add nutrition state
-  const [isLoadingNutrition, setIsLoadingNutrition] = useState(false); // Add loading state
+
+  const [nutritionInfo, setNutritionInfo] = useState("");
+  const [isLoadingNutrition, setIsLoadingNutrition] = useState(false);
 
   const openAIService = new OpenAIService(import.meta.env.VITE_OPENAI_API_KEY);
 
+  // buffer that holds the tail of the stream that may not yet contain a full step
+  const parseBufferRef = useRef("");
+
   const fetchRecipeSteps = async (dish, people, extraNotes, language) => {
+    setIsLoading(true);
+    setSteps([]);
+    setCurrentStepIndex(0);
+    parseBufferRef.current = "";
+
     try {
-      setIsLoading(true);
-      setSteps([]);
-      setCurrentStepIndex(0);
-      setNutritionInfo(""); // Reset nutrition info
+      const fullText = await openAIService.fetchRecipeSteps(
+        dish,
+        people,
+        extraNotes,
+        language,
+        {
+          onText: (token) => {
+            parseBufferRef.current += token;
 
-      const fullText = await openAIService.fetchRecipeSteps(dish, people, extraNotes, language);
-      const enrichedSteps = RecipeParser.parseSteps(fullText);
+            const { steps: newOnes, remaining } = RecipeParser.extractStreamSteps(
+              parseBufferRef.current
+            );
 
-      setSteps(enrichedSteps);
-      setCurrentStepIndex(0);
+            if (newOnes.length) {
+              setSteps((prev) => dedupeByText([...prev, ...newOnes]));
+            }
+            parseBufferRef.current = remaining;
+          },
+          onDone: (finalText) => {
+            // Flush & dedupe once more at completion
+            const finalParsed = RecipeParser.parseSteps(finalText);
+            setSteps((prev) => dedupeByText([...prev, ...finalParsed]));
+          },
+        }
+      );
 
-      return enrichedSteps;
+      // Return final steps for compatibility
+      return RecipeParser.parseSteps(fullText);
     } catch (err) {
       console.error("❌ Error fetching recipe steps:", err);
       throw err;
@@ -34,21 +70,21 @@ export function useRecipe() {
     }
   };
 
-  // Add nutrition fetching function
   const fetchNutritionInfo = async (dish, people, extraNotes, language) => {
     try {
       setIsLoadingNutrition(true);
-      console.log("🥗 Fetching nutrition info for:", dish);
-      
-      const nutritionText = await openAIService.fetchNutritionInfo(dish, people, extraNotes, language);
+      const nutritionText = await openAIService.fetchNutritionInfo(
+        dish,
+        people,
+        extraNotes,
+        language
+      );
       setNutritionInfo(nutritionText);
-      
-      console.log("✅ Nutrition info received:", nutritionText);
       return nutritionText;
     } catch (err) {
       console.error("❌ Error fetching nutrition info:", err);
       setNutritionInfo("Unable to fetch nutrition information at this time.");
-      throw err;
+      return "";
     } finally {
       setIsLoadingNutrition(false);
     }

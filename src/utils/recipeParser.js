@@ -1,57 +1,88 @@
 // src/utils/recipeParser.js
 export class RecipeParser {
+  // Boundary like: "1. ", "1) ", "Step 1: "
+  static STEP_BOUNDARY = /(^|\n)\s*(?:Step\s+)?(\d+)[\.\)]\s*:?[\s]+/gmi;
+
+  // Supports English + a few Indic terms you already had
+  static TIME_REGEX =
+    /(\d+)\s*(hours?|hrs?|hour|minutes?|mins?|min|seconds?|secs?|sec|నిమిషాలు|నిమిషం|గంటలు|గంట|सेकंड|मिनट|घंटा|நிமிடங்கள்|மணி|സെക്കൻഡ്|മിനിറ്റ്|മണിക്കൂർ)/i;
+
+  // NEW: parse final text by reusing the streaming extractor with a forced trailing newline
   static parseSteps(fullText) {
-    console.log("📝 Full recipe text received:", fullText.substring(0, 200) + "...");
-    
-    const timeRegex = /(\d+)\s*(minutes|min|minute|seconds|secs|second|hours|hrs|hour|నిమిషాలు|నిమిషం|గంటలు|గంట|सेकंड|मिनट|घंटा|நிமிடங்கள்|மணி|സെക്കൻഡ്|മിനിറ്റ്|മണിക്കൂർ)/i;
-    console.log("⏱️ Time regex pattern:", timeRegex);
+    const src = fullText.endsWith("\n") ? fullText : fullText + "\n";
+    const { steps } = this.extractStreamSteps(src);
+    return steps;
+  }
 
-    const parsedSteps = fullText
-      .split(/\n+/)
-      .filter((line) => line.trim().match(/^\d+[\).]/))
-      .map((step) => step.trim());
+  // NEW: emit steps only when a full line is available (boundary … newline)
+  static extractStreamSteps(buffer) {
+    const steps = [];
+    let cursor = 0;
 
-    console.log("📋 Parsed steps count:", parsedSteps.length);
-    console.log("📋 Raw parsed steps:", parsedSteps);
+    while (true) {
+      const re = new RegExp(this.STEP_BOUNDARY.source, this._flags(this.STEP_BOUNDARY));
+      re.lastIndex = cursor;
+      const m = re.exec(buffer);
+      if (!m) break;
 
-    const enrichedSteps = parsedSteps.map((step, index) => {
-      console.log(`🔍 Processing step ${index + 1}:`, step);
-      
-      const match = step.match(timeRegex);
-      console.log(`⏱️ Time regex match for step ${index + 1}:`, match);
-      
-      let timeInSeconds = null;
-      if (match) {
-        let value = parseInt(match[1], 10);
-        const unit = match[2].toLowerCase();
-        console.log(`⏱️ Found time in step ${index + 1}:`, { value, unit });
-        
-        if (unit.includes("hour") || unit.includes("hr") || 
-            unit.includes("గంట") || unit.includes("घंटा") || 
-            unit.includes("மணி") || unit.includes("മണിക്കൂർ")) {
-          value = value * 3600;
-          console.log(`⏱️ Converted hours to seconds:`, value);
-        } else if (unit.includes("min") || unit.includes("నిమిష") || 
-                   unit.includes("मिनट") || unit.includes("நிமிட") || 
-                   unit.includes("മിനിറ്റ്")) {
-          value = value * 60;
-          console.log(`⏱️ Converted minutes to seconds:`, value);
-        } else {
-          console.log(`⏱️ Keeping seconds as is:`, value);
-        }
-        timeInSeconds = value;
-      } else {
-        console.log(`❌ No time found in step ${index + 1}`);
+      // text starts after the matched boundary
+      const start = m.index + m[0].length;
+      // we only emit when a newline closes the step
+      const nl = buffer.indexOf("\n", start);
+      if (nl === -1) {
+        // no newline yet → keep from boundary; don't emit partials
+        return { steps, remaining: buffer.slice(m.index) };
       }
-      
-      const enrichedStep = { text: step, time: timeInSeconds };
-      console.log(`✅ Enriched step ${index + 1}:`, enrichedStep);
-      return enrichedStep;
-    });
 
-    console.log("🎯 Final enriched steps:", enrichedSteps);
-    console.log("🎯 Steps with timers:", enrichedSteps.filter(step => step.time !== null));
+      const line = buffer.slice(start, nl).trim();
+      if (line) steps.push(this._enrich(line));
+      cursor = nl + 1; // continue after this line
+    }
 
-    return enrichedSteps;
+    // anything after the last processed point remains for next chunks
+    return { steps, remaining: buffer.slice(cursor) };
+  }
+
+  static _enrich(stepText) {
+    const time = this._extractTimeSeconds(stepText);
+    return { text: stepText, time: time ?? null };
+  }
+
+  static _extractTimeSeconds(text) {
+    const m = text.match(this.TIME_REGEX);
+    if (!m) return null;
+
+    const valueRaw = parseInt(m[1], 10);
+    const unit = (m[2] || "").toLowerCase();
+    if (Number.isNaN(valueRaw)) return null;
+
+    if (
+      unit.includes("hour") ||
+      unit.includes("hr") ||
+      unit.includes("గంట") ||
+      unit.includes("घंट") ||
+      unit.includes("மணி") ||
+      unit.includes("മണിക്കൂർ")
+    ) {
+      return valueRaw * 3600;
+    }
+    if (
+      unit.includes("min") ||
+      unit.includes("నిమిష") ||
+      unit.includes("मिनट") ||
+      unit.includes("நிமிட") ||
+      unit.includes("മിനിറ്റ്")
+    ) {
+      return valueRaw * 60;
+    }
+    return valueRaw; // seconds
+  }
+
+  static _flags(re) {
+    let flags = "";
+    if (re.ignoreCase) flags += "i";
+    if (re.global) flags += "g";
+    if (re.multiline) flags += "m";
+    return flags;
   }
 }
