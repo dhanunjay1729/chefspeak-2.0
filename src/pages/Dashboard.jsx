@@ -1,12 +1,33 @@
 // src/pages/Dashboard.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { getRecentDishes, UserService } from "../services/userService";
+import { getRecentDishes } from "../services/userService";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
-import { Card, CardContent } from "../components/ui/card";
-import { Mic, Settings } from "lucide-react";
-import Header from "../components/Header"; 
+import Header from "../components/Header";
+import { Heart, Salad, ChefHat, Compass } from "lucide-react";
+
+function ActionTile({ icon: Icon, title, desc, onClick, variant = "default" }) {
+  const base =
+    "w-full rounded-2xl border overflow-hidden transition transform hover:-translate-y-0.5 hover:shadow-lg";
+  const styles =
+    variant === "accent"
+      ? "bg-gradient-to-br from-amber-100 via-rose-100 to-fuchsia-100 border-zinc-200"
+      : "bg-white/90 border-zinc-200 backdrop-blur";
+  return (
+    <button onClick={onClick} className={`${base} ${styles}`}>
+      <div className="flex items-center gap-4 p-4">
+        <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-900 text-white shadow">
+          <Icon size={22} />
+        </div>
+        <div className="text-left">
+          <div className="text-base font-semibold text-zinc-900">{title}</div>
+          <div className="text-sm text-zinc-600">{desc}</div>
+        </div>
+      </div>
+    </button>
+  );
+}
 
 export default function Dashboard() {
   const authCtx = useAuth();
@@ -14,11 +35,9 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [userLanguage, setUserLanguage] = useState(null);
 
   useEffect(() => {
     let mounted = true;
-
     (async () => {
       if (!currentUser) {
         if (mounted) setLoading(false);
@@ -26,109 +45,110 @@ export default function Dashboard() {
       }
       try {
         const data = await getRecentDishes(currentUser.uid, { limit: 20 });
-        if (mounted) {
-          setItems(data);
-        }
-      } catch (err) {
-        // no-op
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+        if (mounted) setItems(data);
+      } catch {} finally {
+        if (mounted) setLoading(false);
       }
     })();
-
     return () => {
       mounted = false;
     };
   }, [currentUser]);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!currentUser) {
-        setUserLanguage(null);
-        return;
-      }
-      try {
-        const lang = await UserService.getUserLanguage(currentUser);
-        if (!cancelled) {
-          setUserLanguage(lang);
-        }
-      } catch (e) {
-        // no-op
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [currentUser]);
-
-  const handleStartCooking = () => {
-    navigate("/assistant");
+  const openAssistantWith = (dish) => {
+    navigate(`/assistant?dish=${encodeURIComponent(dish)}`);
   };
 
   if (!currentUser) {
     return (
-      <div className="p-6">
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-2">
-          Log in to see your recent dishes.
-        </p>
+      <div className="min-h-screen bg-gradient-to-b from-white to-zinc-50">
+        <Header />
+        <div className="mx-auto max-w-5xl px-4 py-16">
+          <h1 className="text-3xl font-bold text-zinc-900">Dashboard</h1>
+          <p className="text-sm text-zinc-600 mt-2">Log in to see your recent dishes.</p>
+        </div>
       </div>
     );
   }
 
   return (
     <>
-      <Header /> 
-      <div className="min-h-screen bg-white py-10 px-4 flex flex-col items-center">
-        <div className="w-full max-w-md">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-800">
+      <Header />
+      <div className="min-h-screen bg-gradient-to-b from-white to-zinc-50">
+        <div className="mx-auto max-w-5xl px-4 py-10 space-y-8">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900">
               Welcome, {currentUser?.email?.split("@")[0] || "Chef"}
             </h1>
+            <p className="text-zinc-600">What would you like to do?</p>
           </div>
 
-          <Card className="mb-6">
-            <CardContent className="py-6 px-4">
-              <p className="text-gray-700 mb-2">Preferred Language:</p>
-              <p className="text-lg font-semibold text-blue-600">
-                {userLanguage || "Not set"}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Button
-            onClick={handleStartCooking}
-            className="w-full flex gap-2 items-center justify-center text-lg py-6"
-          >
-            <Mic className="w-5 h-5" />
-            Start Cooking
-          </Button>
-        </div>
-
-        <div className="p-6 space-y-6 w-full max-w-4xl">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-semibold">Dashboard</h1>
+          <div className="space-y-3">
+            <ActionTile
+              icon={ChefHat}
+              title="Start Cooking"
+              desc="Open the assistant and begin a new recipe."
+              variant="accent"
+              onClick={() => navigate("/assistant")}
+            />
+            <ActionTile
+              icon={Salad}
+              title="Cook with Ingredients"
+              desc="Tell us what’s in your kitchen to get dish suggestions."
+              onClick={() => navigate("/ingredients")}
+            />
+            <ActionTile
+              icon={Compass}
+              title="Explore"
+              desc="Discover trending dishes and curated collections."
+              onClick={() => navigate("/explore")}
+            />
+            <ActionTile
+              icon={Heart}
+              title="Favorites"
+              desc="Jump into your saved dishes."
+              onClick={() => navigate("/favorites")}
+            />
           </div>
 
-          <section>
-            <h2 className="text-lg font-medium mb-3">Recent dishes</h2>
+          <section className="space-y-3">
+            <h2 className="text-lg font-semibold text-zinc-900">Personalized suggestions</h2>
+            <div className="rounded-2xl border border-zinc-200 bg-white/90 backdrop-blur p-4 text-sm text-zinc-600">
+              Coming soon — tailored picks based on your cooking history.
+            </div>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-lg font-semibold text-zinc-900">Recent dishes</h2>
             {loading ? (
-              <div className="text-sm text-muted-foreground">Loading…</div>
+              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="rounded-2xl border border-zinc-200 bg-white overflow-hidden animate-pulse"
+                  >
+                    <div className="aspect-video bg-zinc-100" />
+                    <div className="p-3 space-y-2">
+                      <div className="h-4 bg-zinc-100 rounded" />
+                      <div className="h-3 bg-zinc-100 rounded w-1/2" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : items.length === 0 ? (
-              <div className="text-sm text-muted-foreground">
-                No recent dishes yet.
+              <div className="text-sm text-zinc-600">
+                No recent dishes yet. Try <span className="font-medium">Explore</span> or{" "}
+                <span className="font-medium">Cook with Ingredients</span>.
               </div>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 {items.map((it) => (
-                  <div
+                  <button
                     key={it.id}
-                    className="rounded-2xl overflow-hidden shadow-sm bg-card border hover:shadow-md transition"
+                    onClick={() => openAssistantWith(it.dishName)}
+                    className="text-left rounded-2xl overflow-hidden border border-zinc-200 bg-white hover:shadow-md hover:-translate-y-0.5 transition"
                   >
-                    <div className="aspect-video bg-muted overflow-hidden">
+                    <div className="aspect-video bg-zinc-100 overflow-hidden">
                       {it.imageUrl ? (
                         <img
                           src={it.imageUrl}
@@ -137,18 +157,18 @@ export default function Dashboard() {
                           loading="lazy"
                         />
                       ) : (
-                        <div className="w-full h-full grid place-items-center text-xs text-muted-foreground">
+                        <div className="w-full h-full grid place-items-center text-xs text-zinc-500">
                           No image
                         </div>
                       )}
                     </div>
                     <div className="p-3">
-                      <div className="font-medium line-clamp-1">{it.dishName}</div>
-                      <div className="text-xs text-muted-foreground mt-1">
+                      <div className="font-medium line-clamp-1 text-zinc-900">{it.dishName}</div>
+                      <div className="text-xs text-zinc-600 mt-1">
                         {it.language || "—"} {it.people ? `• ${it.people} ppl` : ""}
                       </div>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
