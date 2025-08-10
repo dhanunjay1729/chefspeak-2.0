@@ -12,6 +12,7 @@ import { NavigationControls } from "../components/NavigationControls";
 import { NutritionInfo } from "../components/NutritionInfo";
 import DishImage from "../components/DishImage";
 import { addRecentDish } from "../services/userService";
+import Header from "../components/Header"; 
 
 
 export default function Assistant() {
@@ -97,49 +98,51 @@ export default function Assistant() {
   };
 
   return (
-    <div className="min-h-screen bg-white py-10 px-4 flex flex-col items-center">
-      <h1 className="text-2xl font-bold mb-6">ChefSpeak Assistant</h1>
+    <>
+      <Header />
+      <div className="min-h-screen bg-white py-10 px-4 flex flex-col items-center">
+        <h1 className="text-2xl font-bold mb-6">ChefSpeak Assistant</h1>
 
-      <RecipeForm onSubmit={handleFormSubmit} isLoading={isLoading} />
+        <RecipeForm onSubmit={handleFormSubmit} isLoading={isLoading} />
 
-      {selectedDish && (
-        <div className="mb-6">
-          <DishImage dishName={selectedDish} />
-        </div>
-      )}
-
-      <NutritionInfo nutritionInfo={nutritionInfo} isLoading={isLoadingNutrition} />
-
-      <div className="space-y-3 w-full max-w-md">
-        {steps.map((step, index) => (
-          <RecipeStep
-            key={index}
-            step={step}
-            index={index}
-            isActive={index === currentStepIndex}
-            onSpeak={handleSpeak}
-            onStartTimer={startTimer}
-          />
-        ))}
-
-        {/* Simple skeleton while waiting for first streamed step */}
-        {isLoading && steps.length === 0 && (
-          <div className="animate-pulse space-y-2">
-            <div className="h-4 bg-gray-200 rounded" />
-            <div className="h-4 bg-gray-200 rounded w-5/6" />
-            <div className="h-4 bg-gray-200 rounded w-4/6" />
+        {selectedDish && (
+          <div className="mb-6">
+            <DishImage dishName={selectedDish} />
           </div>
         )}
+
+        <NutritionInfo nutritionInfo={nutritionInfo} isLoading={isLoadingNutrition} />
+
+        <div className="space-y-3 w-full max-w-md">
+          {steps.map((step, index) => (
+            <RecipeStep
+              key={index}
+              step={step}
+              index={index}
+              isActive={index === currentStepIndex}
+              onSpeak={handleSpeak}
+              onStartTimer={startTimer}
+            />
+          ))}
+
+          {isLoading && steps.length === 0 && (
+            <div className="animate-pulse space-y-2">
+              <div className="h-4 bg-gray-200 rounded" />
+              <div className="h-4 bg-gray-200 rounded w-5/6" />
+              <div className="h-4 bg-gray-200 rounded w-4/6" />
+            </div>
+          )}
+        </div>
+
+        <TimerDisplay remaining={remaining} />
+
+        <NavigationControls
+          onBack={handleNavigateBack}
+          onRepeat={handleRepeat}
+          onNext={handleNavigateNext}
+          hasSteps={steps.length > 0}
+        />
       </div>
-
-      <TimerDisplay remaining={remaining} />
-
-      <NavigationControls
-        onBack={handleNavigateBack}
-        onRepeat={handleRepeat}
-        onNext={handleNavigateNext}
-        hasSteps={steps.length > 0}
-      />
-    </div>
+    </>
   );
 }
