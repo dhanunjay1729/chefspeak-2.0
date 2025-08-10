@@ -11,6 +11,8 @@ import { TimerDisplay } from "../components/TimerDisplay";
 import { NavigationControls } from "../components/NavigationControls";
 import { NutritionInfo } from "../components/NutritionInfo";
 import DishImage from "../components/DishImage";
+import { addRecentDish } from "../services/userService";
+
 
 export default function Assistant() {
   const { user } = useAuth();
@@ -57,6 +59,21 @@ export default function Assistant() {
     // Fire both, but do NOT await nutrition; steps stream to UI
     fetchNutritionInfo(dishName, servings, notes, language).catch(() => {});
     fetchRecipeSteps(dishName, servings, notes, language).catch(() => {});
+
+    // Save recent dish entry
+    try {
+      if (user?.uid) {
+        await addRecentDish(user.uid, {
+          dishName,
+          imageUrl: undefined, // set when available
+          language,
+          people: servings,
+          notes, // extraNotes equivalent
+        });
+      }
+    } catch (e) {
+      console.log("recent dish save failed:", e);
+    }
   };
 
   const handleSpeak = (text) => {

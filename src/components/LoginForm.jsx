@@ -41,6 +41,18 @@ export default function LoginForm() {
       <button type="submit" className="w-full bg-green-600 text-white py-2 rounded">
         Log In
       </button>
+
+      {/* Added signup option */}
+      <div className="text-sm text-center text-gray-600">
+        Don’t have an account?{" "}
+        <button
+          type="button"
+          onClick={() => navigate("/signup")}
+          className="text-blue-600 hover:underline"
+        >
+          Sign up
+        </button>
+      </div>
     </form>
   );
 }

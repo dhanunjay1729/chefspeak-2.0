@@ -35,7 +35,7 @@ export class OpenAIService {
       throw new Error("OpenAI streaming response failed");
     }
 
-    // Stream tokens; surface them via callbacks.
+    // opts contains onText callback for per-token updates
     const fullText = await this.parseStreamingResponse(response, opts);
     return fullText;
   }

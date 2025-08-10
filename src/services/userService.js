@@ -1,5 +1,17 @@
 // src/services/userService.js
-import { doc, getDoc } from "firebase/firestore";
+
+//service wrapper around Firebase Firestore to fetch user-specific data 
+import {
+  doc,
+  getDoc,
+  collection,
+  addDoc,
+  getDocs,
+  query,
+  orderBy,
+  limit as qLimit,
+  serverTimestamp,
+} from "firebase/firestore";
 import { db } from "../firebase";
 
 export class UserService {
@@ -19,4 +31,27 @@ export class UserService {
       return "English";
     }
   }
+}
+
+// Write one recent dish entry under users/{uid}/recentDishes
+export async function addRecentDish(uid, { dishName, imageUrl, language, people, notes }) {
+  if (!uid || !dishName) return;
+  const colRef = collection(db, "users", uid, "recentDishes");
+  await addDoc(colRef, {
+    dishName,
+    imageUrl: imageUrl || "",
+    language: language || "English",
+    people: people ?? null,
+    notes: notes || "",
+    createdAt: serverTimestamp(),
+  });
+}
+
+// Read recent dishes (latest first)
+export async function getRecentDishes(uid, { limit = 12 } = {}) {
+  if (!uid) return [];
+  const colRef = collection(db, "users", uid, "recentDishes");
+  const q = query(colRef, orderBy("createdAt", "desc"), qLimit(limit));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }

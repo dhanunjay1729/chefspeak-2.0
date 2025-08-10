@@ -18,7 +18,7 @@ function App() {
           <Routes>
             {/* Public routes (redirect if already logged in) */}
             <Route
-              path="/"
+              path="/login"
               element={
                 <RedirectIfAuthed>
                   <Login />
@@ -26,7 +26,7 @@ function App() {
               }
             />
             <Route
-              path="/signup"
+              path="/"
               element={
                 <RedirectIfAuthed>
                   <Signup />
