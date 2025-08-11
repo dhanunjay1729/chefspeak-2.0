@@ -1,5 +1,5 @@
 // src/pages/Assistant.jsx
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, Fragment } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { TTSService } from "../services/ttsService";
 import { UserService } from "../services/userService";
@@ -36,6 +36,7 @@ export default function Assistant() {
   const ttsService = new TTSService();
 
   const firstStepSpokenRef = useRef(false);
+  const [timerOwnerIndex, setTimerOwnerIndex] = useState(null);
 
   useEffect(() => {
     const loadUserLanguage = async () => {
@@ -56,6 +57,7 @@ export default function Assistant() {
   const handleFormSubmit = async ({ dishName, servings, notes }) => {
     setSelectedDish(dishName);
     firstStepSpokenRef.current = false; // reset for new recipe
+    setTimerOwnerIndex(null); // clear any previous timer owner
 
     // Fire both, but do NOT await nutrition; steps stream to UI
     fetchNutritionInfo(dishName, servings, notes, language).catch(() => {});
@@ -97,6 +99,12 @@ export default function Assistant() {
     }
   };
 
+  // Start a timer and remember which step owns it
+  const handleStartTimerForStep = (index) => (seconds) => {
+    setTimerOwnerIndex(index);
+    startTimer(seconds);
+  };
+
   return (
     <>
       <Header />
@@ -115,14 +123,44 @@ export default function Assistant() {
 
         <div className="space-y-3 w-full max-w-md">
           {steps.map((step, index) => (
-            <RecipeStep
-              key={index}
-              step={step}
-              index={index}
-              isActive={index === currentStepIndex}
-              onSpeak={handleSpeak}
-              onStartTimer={startTimer}
-            />
+            <Fragment key={index}>
+              <RecipeStep
+                step={step}
+                index={index}
+                isActive={index === currentStepIndex}
+                onSpeak={handleSpeak}
+                onStartTimer={handleStartTimerForStep(index)}
+              />
+              {timerOwnerIndex === index && remaining > 0 && (
+                <div className="pl-3">
+                  <TimerDisplay remaining={remaining} />
+                  {/* Controls under the inline time remaining */}
+                  <div className="mt-2 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        startTimer(0);
+                        setTimerOwnerIndex(null);
+                      }}
+                      className="inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium
+                                 bg-red-50 text-red-700 hover:bg-red-100 active:bg-red-200
+                                 dark:bg-red-900/30 dark:text-red-200 dark:hover:bg-red-900/50"
+                    >
+                      Stop
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => startTimer(remaining + 60)}
+                      className="inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium
+                                 bg-amber-50 text-amber-800 hover:bg-amber-100 active:bg-amber-200
+                                 dark:bg-amber-900/30 dark:text-amber-200 dark:hover:bg-amber-900/50"
+                    >
+                      +1 min
+                    </button>
+                  </div>
+                </div>
+              )}
+            </Fragment>
           ))}
 
           {isLoading && steps.length === 0 && (
@@ -133,8 +171,6 @@ export default function Assistant() {
             </div>
           )}
         </div>
-
-        <TimerDisplay remaining={remaining} />
 
         <NavigationControls
           onBack={handleNavigateBack}
