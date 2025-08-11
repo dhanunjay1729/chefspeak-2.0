@@ -99,7 +99,7 @@ export default function Dashboard() {
             />
             <ActionTile
               icon={Compass}
-              title="Explore"
+              title="Explore (coming soon)"
               desc="Discover trending dishes and curated collections."
               onClick={() => navigate("/explore")}
             />
