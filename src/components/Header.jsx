@@ -59,26 +59,6 @@ export default function Header() {
                   <User size={18} />
                   Profile
                 </button>
-                <button
-                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-zinc-50 text-zinc-800 text-sm"
-                  onClick={() => {
-                    setOpen(false);
-                    navigate("/settings");
-                  }}
-                >
-                  <Settings size={18} />
-                  Settings
-                </button>
-                <button
-                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-zinc-50 text-zinc-800 text-sm"
-                  onClick={() => {
-                    setOpen(false);
-                    navigate("/preferences");
-                  }}
-                >
-                  <SlidersHorizontal size={18} />
-                  Preferences
-                </button>
 
                 <div className="my-1 h-px bg-zinc-100" />
 
