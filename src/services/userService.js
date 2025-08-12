@@ -11,8 +11,9 @@ import {
   orderBy,
   limit as qLimit,
   serverTimestamp,
-  setDoc,            // added
-  updateDoc,         // added
+  setDoc,
+  updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "../firebase";
 
@@ -78,4 +79,10 @@ export async function updateUserProfile(uid, data) {
   } else {
     await setDoc(ref, { ...data, createdAt: serverTimestamp() });
   }
+}
+
+export async function deleteRecentDish(uid, dishId) {
+  if (!uid || !dishId) return;
+  const ref = doc(db, "users", uid, "recentDishes", dishId);
+  await deleteDoc(ref);
 }

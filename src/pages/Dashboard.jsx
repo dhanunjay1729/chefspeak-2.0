@@ -1,11 +1,11 @@
 // src/pages/Dashboard.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { getRecentDishes } from "../services/userService";
+import { getRecentDishes, deleteRecentDish } from "../services/userService";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import Header from "../components/Header";
-import { Heart, Salad, ChefHat, Compass } from "lucide-react";
+import { Heart, Salad, ChefHat, Compass, X, Loader2 } from "lucide-react";
 
 function ActionTile({ icon: Icon, title, desc, onClick, variant = "default" }) {
   const base =
@@ -35,6 +35,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [removing, setRemoving] = useState({}); // id -> boolean
 
   useEffect(() => {
     let mounted = true;
@@ -57,6 +58,25 @@ export default function Dashboard() {
 
   const openAssistantWith = (dish) => {
     navigate(`/assistant?dish=${encodeURIComponent(dish)}`);
+  };
+
+  const handleRemove = async (e, id) => {
+    e.stopPropagation();
+    if (!currentUser) return;
+    setRemoving((s) => ({ ...s, [id]: true }));
+    const prev = items;
+    setItems((s) => s.filter((it) => it.id !== id));
+    try {
+      await deleteRecentDish(currentUser.uid, id);
+    } catch (err) {
+      console.error("Failed to remove recent dish:", err);
+      setItems(prev); // revert on failure
+    } finally {
+      setRemoving((s) => {
+        const { [id]: _, ...rest } = s;
+        return rest;
+      });
+    }
   };
 
   if (!currentUser) {
@@ -143,11 +163,27 @@ export default function Dashboard() {
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 {items.map((it) => (
-                  <button
+                  <div
                     key={it.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => openAssistantWith(it.dishName)}
-                    className="text-left rounded-2xl overflow-hidden border border-zinc-200 bg-white hover:shadow-md hover:-translate-y-0.5 transition"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") openAssistantWith(it.dishName);
+                    }}
+                    className="relative cursor-pointer text-left rounded-2xl overflow-hidden border border-zinc-200 bg-white hover:shadow-md hover:-translate-y-0.5 transition focus:outline-none focus:ring-2 focus:ring-amber-500/30"
                   >
+                    {/* Remove (X) button */}
+                    <button
+                      type="button"
+                      aria-label="Remove from recent"
+                      title="Remove from recent"
+                      onClick={(e) => handleRemove(e, it.id)}
+                      className="absolute top-2 right-2 inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/90 text-zinc-700 border border-zinc-200 shadow hover:bg-white"
+                    >
+                      {removing[it.id] ? <Loader2 size={14} className="animate-spin" /> : <X size={14} />}
+                    </button>
+
                     <div className="aspect-video bg-zinc-100 overflow-hidden">
                       {it.imageUrl ? (
                         <img
@@ -168,7 +204,7 @@ export default function Dashboard() {
                         {it.language || "—"} {it.people ? `• ${it.people} ppl` : ""}
                       </div>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             )}
