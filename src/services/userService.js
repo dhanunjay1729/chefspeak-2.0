@@ -11,8 +11,13 @@ import {
   orderBy,
   limit as qLimit,
   serverTimestamp,
+  setDoc,            // added
+  updateDoc,         // added
 } from "firebase/firestore";
 import { db } from "../firebase";
+
+// Helper to reference a user's doc
+const usersRef = (uid) => doc(db, "users", uid);
 
 export class UserService {
   static async getUserLanguage(user) {
@@ -54,4 +59,23 @@ export async function getRecentDishes(uid, { limit = 12 } = {}) {
   const q = query(colRef, orderBy("createdAt", "desc"), qLimit(limit));
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+// Get full user profile document at users/{uid}
+export async function getUserProfile(uid) {
+  if (!uid) return null;
+  const snap = await getDoc(usersRef(uid));
+  return snap.exists() ? snap.data() : null;
+}
+
+// Create or update user profile at users/{uid}
+export async function updateUserProfile(uid, data) {
+  if (!uid || !data || typeof data !== "object") return;
+  const ref = usersRef(uid);
+  const snap = await getDoc(ref);
+  if (snap.exists()) {
+    await updateDoc(ref, data);
+  } else {
+    await setDoc(ref, { ...data, createdAt: serverTimestamp() });
+  }
 }
