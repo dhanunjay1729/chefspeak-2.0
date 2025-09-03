@@ -56,8 +56,13 @@ export default function Dashboard() {
     };
   }, [currentUser]);
 
-  const openAssistantWith = (dish) => {
-    navigate(`/assistant?dish=${encodeURIComponent(dish)}`);
+  const openAssistantWith = (dishItem) => {
+    const params = new URLSearchParams({
+      dish: dishItem.dishName,
+      people: dishItem.people || 2,
+      language: dishItem.language || 'English'
+    });
+    navigate(`/assistant?${params.toString()}`);
   };
 
   const handleRemove = async (e, id) => {
@@ -114,7 +119,7 @@ export default function Dashboard() {
             <ActionTile
               icon={Salad}
               title="Cook with Ingredients"
-              desc="Tell us what’s in your kitchen to get dish suggestions."
+              desc="Tell us what's in your kitchen to get dish suggestions."
               onClick={() => navigate("/ingredients")}
             />
             <ActionTile
@@ -147,7 +152,6 @@ export default function Dashboard() {
                     key={i}
                     className="rounded-2xl border border-zinc-200 bg-white overflow-hidden animate-pulse"
                   >
-                    <div className="aspect-video bg-zinc-100" />
                     <div className="p-3 space-y-2">
                       <div className="h-4 bg-zinc-100 rounded" />
                       <div className="h-3 bg-zinc-100 rounded w-1/2" />
@@ -167,9 +171,9 @@ export default function Dashboard() {
                     key={it.id}
                     role="button"
                     tabIndex={0}
-                    onClick={() => openAssistantWith(it.dishName)}
+                    onClick={() => openAssistantWith(it)}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") openAssistantWith(it.dishName);
+                      if (e.key === "Enter" || e.key === " ") openAssistantWith(it);
                     }}
                     className="relative cursor-pointer text-left rounded-2xl overflow-hidden border border-zinc-200 bg-white hover:shadow-md hover:-translate-y-0.5 transition focus:outline-none focus:ring-2 focus:ring-amber-500/30"
                   >
@@ -179,28 +183,14 @@ export default function Dashboard() {
                       aria-label="Remove from recent"
                       title="Remove from recent"
                       onClick={(e) => handleRemove(e, it.id)}
-                      className="absolute top-2 right-2 inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/90 text-zinc-700 border border-zinc-200 shadow hover:bg-white"
+                      className="absolute top-2 right-2 z-10 inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/90 text-zinc-700 border border-zinc-200 shadow hover:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/30"
                     >
                       {removing[it.id] ? <Loader2 size={14} className="animate-spin" /> : <X size={14} />}
                     </button>
 
-                    <div className="aspect-video bg-zinc-100 overflow-hidden">
-                      {it.imageUrl ? (
-                        <img
-                          src={it.imageUrl}
-                          alt={it.dishName}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full grid place-items-center text-xs text-zinc-500">
-                          No image
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-3">
-                      <div className="font-medium line-clamp-1 text-zinc-900">{it.dishName}</div>
-                      <div className="text-xs text-zinc-600 mt-1">
+                    <div className="p-4">
+                      <div className="font-medium line-clamp-1 text-zinc-900 text-lg">{it.dishName}</div>
+                      <div className="text-sm text-zinc-600 mt-2">
                         {it.language || "—"} {it.people ? `• ${it.people} ppl` : ""}
                       </div>
                     </div>

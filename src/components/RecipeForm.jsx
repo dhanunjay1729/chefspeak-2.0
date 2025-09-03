@@ -1,11 +1,20 @@
 // src/components/RecipeForm.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 
-export function RecipeForm({ onSubmit, isLoading }) {
-  const [dishName, setDishName] = useState("");
-  const [servings, setServings] = useState(2);
-  const [notes, setNotes] = useState("");
+export function RecipeForm({ onSubmit, isLoading, initialData }) {
+  const [dishName, setDishName] = useState(initialData?.dishName || "");
+  const [servings, setServings] = useState(initialData?.servings || 2);
+  const [notes, setNotes] = useState(initialData?.notes || "");
+
+  // Update form when initialData changes
+  useEffect(() => {
+    if (initialData) {
+      setDishName(initialData.dishName || "");
+      setServings(initialData.servings || 2);
+      setNotes(initialData.notes || "");
+    }
+  }, [initialData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

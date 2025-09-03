@@ -10,15 +10,18 @@ import { RecipeStep } from "../components/RecipeStep";
 import { TimerDisplay } from "../components/TimerDisplay";
 import { NavigationControls } from "../components/NavigationControls";
 import { NutritionInfo } from "../components/NutritionInfo";
-import DishImage from "../components/DishImage";
 import { addRecentDish } from "../services/userService";
 import Header from "../components/Header"; 
-
+import { useSearchParams } from "react-router-dom";
 
 export default function Assistant() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [language, setLanguage] = useState("English");
   const [selectedDish, setSelectedDish] = useState("");
+  
+  // Pre-filled form data from URL params
+  const [prefilledData, setPrefilledData] = useState(null);
 
   const {
     steps,
@@ -46,7 +49,27 @@ export default function Assistant() {
     loadUserLanguage();
   }, [user]);
 
-  // Speak as soon as the first step appears (don’t block UI)
+  // Extract URL parameters on component mount
+  useEffect(() => {
+    const dishFromUrl = searchParams.get('dish');
+    const peopleFromUrl = searchParams.get('people');
+    const languageFromUrl = searchParams.get('language');
+    
+    if (dishFromUrl) {
+      setPrefilledData({
+        dishName: dishFromUrl,
+        servings: peopleFromUrl ? parseInt(peopleFromUrl, 10) : 2,
+        notes: ''
+      });
+      setSelectedDish(dishFromUrl);
+      
+      if (languageFromUrl) {
+        setLanguage(languageFromUrl);
+      }
+    }
+  }, [searchParams]);
+
+  // Speak as soon as the first step appears (don't block UI)
   useEffect(() => {
     if (!firstStepSpokenRef.current && steps.length > 0) {
       firstStepSpokenRef.current = true;
@@ -111,13 +134,11 @@ export default function Assistant() {
       <div className="min-h-screen bg-white py-10 px-4 flex flex-col items-center">
         <h1 className="text-2xl font-bold mb-6">ChefSpeak Assistant</h1>
 
-        <RecipeForm onSubmit={handleFormSubmit} isLoading={isLoading} />
-
-        {selectedDish && (
-          <div className="mb-6">
-            <DishImage dishName={selectedDish} />
-          </div>
-        )}
+        <RecipeForm 
+          onSubmit={handleFormSubmit} 
+          isLoading={isLoading}
+          initialData={prefilledData}
+        />
 
         <NutritionInfo nutritionInfo={nutritionInfo} isLoading={isLoadingNutrition} />
 
