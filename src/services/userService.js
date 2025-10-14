@@ -40,7 +40,10 @@ export class UserService {
 }
 
 // Write one recent dish entry under users/{uid}/recentDishes
-export async function addRecentDish(uid, { dishName, imageUrl, language, people, notes }) {
+export async function addRecentDish(
+  uid,
+  { dishName, imageUrl, language, people, notes, recipeSteps, nutritionInfo }
+) {
   if (!uid || !dishName) return;
   const colRef = collection(db, "users", uid, "recentDishes");
   await addDoc(colRef, {
@@ -49,6 +52,8 @@ export async function addRecentDish(uid, { dishName, imageUrl, language, people,
     language: language || "English",
     people: people ?? null,
     notes: notes || "",
+    recipeSteps: recipeSteps || [],
+    nutritionInfo: nutritionInfo || "",
     createdAt: serverTimestamp(),
   });
 }
@@ -60,6 +65,14 @@ export async function getRecentDishes(uid, { limit = 12 } = {}) {
   const q = query(colRef, orderBy("createdAt", "desc"), qLimit(limit));
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+// Get a specific dish by ID
+export async function getDishById(uid, dishId) {
+  if (!uid || !dishId) return null;
+  const ref = doc(db, "users", uid, "recentDishes", dishId);
+  const snap = await getDoc(ref);
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 }
 
 // Get full user profile document at users/{uid}

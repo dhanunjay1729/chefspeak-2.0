@@ -56,13 +56,8 @@ export default function Dashboard() {
     };
   }, [currentUser]);
 
-  const openAssistantWith = (dishItem) => {
-    const params = new URLSearchParams({
-      dish: dishItem.dishName,
-      people: dishItem.people || 2,
-      language: dishItem.language || 'English'
-    });
-    navigate(`/assistant?${params.toString()}`);
+  const openRecipeView = (dishItem) => {
+    navigate(`/recipe/${dishItem.id}`);
   };
 
   const handleRemove = async (e, id) => {
@@ -171,9 +166,9 @@ export default function Dashboard() {
                     key={it.id}
                     role="button"
                     tabIndex={0}
-                    onClick={() => openAssistantWith(it)}
+                    onClick={() => openRecipeView(it)}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") openAssistantWith(it);
+                      if (e.key === "Enter" || e.key === " ") openRecipeView(it);
                     }}
                     className="relative cursor-pointer text-left rounded-2xl overflow-hidden border border-zinc-200 bg-white hover:shadow-md hover:-translate-y-0.5 transition focus:outline-none focus:ring-2 focus:ring-amber-500/30"
                   >
