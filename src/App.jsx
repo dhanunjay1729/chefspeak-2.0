@@ -12,6 +12,7 @@ const Assistant = lazy(() => import("./pages/Assistant"));
 const Ingredients = lazy(() => import("./pages/Ingredients"));
 const Profile = lazy(() => import("./pages/Profile"));
 const RecipeView = lazy(() => import("./pages/RecipeView"));
+const Favorites = lazy(() => import("./pages/Favorites"));
 
 function App() {
   return (
@@ -75,6 +76,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <RecipeView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/favorites"
+              element={
+                <ProtectedRoute>
+                  <Favorites />
                 </ProtectedRoute>
               }
             />

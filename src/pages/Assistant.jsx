@@ -10,6 +10,7 @@ import { RecipeStep } from "../components/RecipeStep";
 import { TimerDisplay } from "../components/TimerDisplay";
 import { NavigationControls } from "../components/NavigationControls";
 import { NutritionInfo } from "../components/NutritionInfo";
+import { FavoriteButton } from "../components/FavoriteButton";
 import { addRecentDish } from "../services/userService";
 import Header from "../components/Header"; 
 import { useSearchParams } from "react-router-dom";
@@ -98,7 +99,6 @@ export default function Assistant() {
             recipeSteps: steps,
             nutritionInfo: nutritionInfo || null,
           });
-          console.log("Complete recipe saved successfully");
         } catch (error) {
           console.error("Failed to save complete recipe:", error);
         }
@@ -129,9 +129,6 @@ export default function Assistant() {
     // Fire both, but do NOT await nutrition; steps stream to UI
     fetchNutritionInfo(dishName, servings, notes, language).catch(() => {});
     fetchRecipeSteps(dishName, servings, notes, language).catch(() => {});
-
-    // Remove the addRecentDish call from here since we'll save the complete recipe later
-    // The complete recipe will be saved by the new useEffect above
   };
 
   const handleSpeak = (text) => {
@@ -160,6 +157,16 @@ export default function Assistant() {
     startTimer(seconds);
   };
 
+  // Create recipe object for FavoriteButton
+  const currentRecipe = selectedDish && steps.length > 0 ? {
+    dishName: selectedDish,
+    language,
+    people: prefilledData?.servings || 2,
+    notes: prefilledData?.notes || '',
+    recipeSteps: steps,
+    nutritionInfo: nutritionInfo || null,
+  } : null;
+
   return (
     <>
       <Header />
@@ -174,6 +181,19 @@ export default function Assistant() {
 
         <NutritionInfo nutritionInfo={nutritionInfo} isLoading={isLoadingNutrition} />
 
+        {/* Show favorite button when recipe is loaded */}
+        {currentRecipe && !isLoading && !isLoadingNutrition && (
+          <div className="w-full max-w-md mb-4">
+            <FavoriteButton 
+              recipe={currentRecipe}
+              className="w-full justify-center"
+              onFavoriteChange={(favorited) => {
+                // Recipe added to favorites
+              }}
+            />
+          </div>
+        )}
+
         <div className="space-y-3 w-full max-w-md">
           {steps.map((step, index) => (
             <Fragment key={index}>
@@ -187,7 +207,6 @@ export default function Assistant() {
               {timerOwnerIndex === index && remaining > 0 && (
                 <div className="pl-3">
                   <TimerDisplay remaining={remaining} />
-                  {/* Controls under the inline time remaining */}
                   <div className="mt-2 flex items-center gap-2">
                     <button
                       type="button"
@@ -196,8 +215,7 @@ export default function Assistant() {
                         setTimerOwnerIndex(null);
                       }}
                       className="inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium
-                                 bg-red-50 text-red-700 hover:bg-red-100 active:bg-red-200
-                                 dark:bg-red-900/30 dark:text-red-200 dark:hover:bg-red-900/50"
+                                 bg-red-50 text-red-700 hover:bg-red-100 active:bg-red-200"
                     >
                       Stop
                     </button>
@@ -205,8 +223,7 @@ export default function Assistant() {
                       type="button"
                       onClick={() => startTimer(remaining + 60)}
                       className="inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium
-                                 bg-amber-50 text-amber-800 hover:bg-amber-100 active:bg-amber-200
-                                 dark:bg-amber-900/30 dark:text-amber-200 dark:hover:bg-amber-900/50"
+                                 bg-amber-50 text-amber-800 hover:bg-amber-100 active:bg-amber-200"
                     >
                       +1 min
                     </button>

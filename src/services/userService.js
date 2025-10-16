@@ -67,11 +67,22 @@ export async function getRecentDishes(uid, { limit = 12 } = {}) {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
-// Get a specific dish by ID
+// Get a specific dish by ID (check both recent and favorites)
 export async function getDishById(uid, dishId) {
   if (!uid || !dishId) return null;
-  const ref = doc(db, "users", uid, "recentDishes", dishId);
-  const snap = await getDoc(ref);
+  
+  // First try recent dishes
+  let ref = doc(db, "users", uid, "recentDishes", dishId);
+  let snap = await getDoc(ref);
+  
+  if (snap.exists()) {
+    return { id: snap.id, ...snap.data() };
+  }
+  
+  // If not found, try favorites
+  ref = doc(db, "users", uid, "favoriteDishes", dishId);
+  snap = await getDoc(ref);
+  
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 }
 
@@ -98,4 +109,48 @@ export async function deleteRecentDish(uid, dishId) {
   if (!uid || !dishId) return;
   const ref = doc(db, "users", uid, "recentDishes", dishId);
   await deleteDoc(ref);
+}
+
+// Add favorite dishes functionality
+export async function addFavoriteDish(
+  uid,
+  { dishName, imageUrl, language, people, notes, recipeSteps, nutritionInfo }
+) {
+  if (!uid || !dishName) return;
+  const colRef = collection(db, "users", uid, "favoriteDishes");
+  await addDoc(colRef, {
+    dishName,
+    imageUrl: imageUrl || "",
+    language: language || "English",
+    people: people ?? null,
+    notes: notes || "",
+    recipeSteps: recipeSteps || [],
+    nutritionInfo: nutritionInfo || null,
+    createdAt: serverTimestamp(),
+  });
+}
+
+// Get favorite dishes (latest first)
+export async function getFavoriteDishes(uid, { limit = 12 } = {}) {
+  if (!uid) return [];
+  const colRef = collection(db, "users", uid, "favoriteDishes");
+  const q = query(colRef, orderBy("createdAt", "desc"), qLimit(limit));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+// Remove from favorites
+export async function removeFavoriteDish(uid, dishId) {
+  if (!uid || !dishId) return;
+  const ref = doc(db, "users", uid, "favoriteDishes", dishId);
+  await deleteDoc(ref);
+}
+
+// Check if dish is in favorites (by dish name)
+export async function isDishFavorited(uid, dishName) {
+  if (!uid || !dishName) return false;
+  const colRef = collection(db, "users", uid, "favoriteDishes");
+  const q = query(colRef);
+  const snap = await getDocs(q);
+  return snap.docs.some(doc => doc.data().dishName === dishName);
 }
