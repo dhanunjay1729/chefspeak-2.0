@@ -77,29 +77,61 @@ export default function Assistant() {
     }
   }, [steps, language, ttsService]);
 
+  // Add this new useEffect to save complete recipe when both steps and nutrition are loaded
+  useEffect(() => {
+    const saveCompleteRecipe = async () => {
+      // Only save if we have a user, selected dish, steps, and nutrition info is loaded (success or failure)
+      if (
+        user?.uid &&
+        selectedDish &&
+        steps.length > 0 &&
+        !isLoading &&
+        !isLoadingNutrition
+      ) {
+        try {
+          await addRecentDish(user.uid, {
+            dishName: selectedDish,
+            imageUrl: undefined,
+            language,
+            people: prefilledData?.servings || 2, // Use the servings from form
+            notes: prefilledData?.notes || '',   // Use notes from form
+            recipeSteps: steps,
+            nutritionInfo: nutritionInfo || null,
+          });
+          console.log("Complete recipe saved successfully");
+        } catch (error) {
+          console.error("Failed to save complete recipe:", error);
+        }
+      }
+    };
+
+    saveCompleteRecipe();
+  }, [
+    user?.uid,
+    selectedDish,
+    steps,
+    nutritionInfo,
+    isLoading,
+    isLoadingNutrition,
+    language,
+    prefilledData?.servings,
+    prefilledData?.notes
+  ]);
+
   const handleFormSubmit = async ({ dishName, servings, notes }) => {
     setSelectedDish(dishName);
     firstStepSpokenRef.current = false; // reset for new recipe
     setTimerOwnerIndex(null); // clear any previous timer owner
 
+    // Update prefilled data to store current form values for recipe saving
+    setPrefilledData({ dishName, servings, notes });
+
     // Fire both, but do NOT await nutrition; steps stream to UI
     fetchNutritionInfo(dishName, servings, notes, language).catch(() => {});
     fetchRecipeSteps(dishName, servings, notes, language).catch(() => {});
 
-    // Save recent dish entry
-    try {
-      if (user?.uid) {
-        await addRecentDish(user.uid, {
-          dishName,
-          imageUrl: undefined, // set when available
-          language,
-          people: servings,
-          notes, // extraNotes equivalent
-        });
-      }
-    } catch (e) {
-      console.log("recent dish save failed:", e);
-    }
+    // Remove the addRecentDish call from here since we'll save the complete recipe later
+    // The complete recipe will be saved by the new useEffect above
   };
 
   const handleSpeak = (text) => {

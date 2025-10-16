@@ -4,6 +4,9 @@ import multer from "multer";
 import fetch from "node-fetch";
 import fs from "fs";
 import FormData from "form-data";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
 app.use(cors());
@@ -34,7 +37,7 @@ app.post("/api/check-wakeword", upload.single("audio"), async (req, res) => {
     const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer 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`,
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, // ✅ SAFE HERE
       },
       body: formData,
     });
