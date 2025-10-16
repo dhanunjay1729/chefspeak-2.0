@@ -1,6 +1,7 @@
 // src/pages/Dashboard.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { useUserProfile } from "../hooks/useUserProfile";
 import { getRecentDishes, deleteRecentDish } from "../services/userService";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -32,6 +33,7 @@ function ActionTile({ icon: Icon, title, desc, onClick, variant = "default" }) {
 export default function Dashboard() {
   const authCtx = useAuth();
   const currentUser = authCtx.currentUser ?? authCtx.user ?? null;
+  const { displayName } = useUserProfile();
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -98,7 +100,7 @@ export default function Dashboard() {
         <div className="mx-auto max-w-5xl px-4 py-10 space-y-8">
           <div className="flex flex-col gap-1">
             <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900">
-              Welcome, {currentUser?.email?.split("@")[0] || "Chef"}
+              Welcome, {displayName}
             </h1>
             <p className="text-zinc-600">What would you like to do?</p>
           </div>

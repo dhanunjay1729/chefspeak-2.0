@@ -27,7 +27,7 @@ export function useRecipe() {
   // buffer that holds the tail of the stream that may not yet contain a full step
   const parseBufferRef = useRef("");
 
-  const fetchRecipeSteps = async (dish, people, extraNotes, language) => {
+  const fetchRecipeSteps = async (dish, people, extraNotes, language, userPreferences = {}) => {
     setIsLoading(true);
     setSteps([]);
     setCurrentStepIndex(0);
@@ -39,6 +39,7 @@ export function useRecipe() {
         people,
         extraNotes,
         language,
+        userPreferences, // Pass user preferences
         {
           onText: (token) => {
             parseBufferRef.current += token;
@@ -70,14 +71,15 @@ export function useRecipe() {
     }
   };
 
-  const fetchNutritionInfo = async (dish, people, extraNotes, language) => {
+  const fetchNutritionInfo = async (dish, people, extraNotes, language, userPreferences = {}) => {
     try {
       setIsLoadingNutrition(true);
       const nutritionText = await openAIService.fetchNutritionInfo(
         dish,
         people,
         extraNotes,
-        language
+        language,
+        userPreferences // Pass user preferences
       );
       setNutritionInfo(nutritionText);
       return nutritionText;

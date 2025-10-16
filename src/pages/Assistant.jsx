@@ -1,6 +1,7 @@
 // src/pages/Assistant.jsx
 import { useEffect, useRef, useState, Fragment } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { useUserProfile } from "../hooks/useUserProfile";
 import { TTSService } from "../services/ttsService";
 import { UserService } from "../services/userService";
 import { useRecipe } from "../hooks/useRecipe";
@@ -11,18 +12,26 @@ import { TimerDisplay } from "../components/TimerDisplay";
 import { NavigationControls } from "../components/NavigationControls";
 import { NutritionInfo } from "../components/NutritionInfo";
 import { FavoriteButton } from "../components/FavoriteButton";
+import { NonVegWarningDialog } from "../components/NonVegWarningDialog";
+import { DishAnalysisService } from "../services/dishAnalysisService";
 import { addRecentDish } from "../services/userService";
 import Header from "../components/Header"; 
 import { useSearchParams } from "react-router-dom";
 
 export default function Assistant() {
   const { user } = useAuth();
+  const { preferredLanguage, dietType, allergies, dislikes, skillLevel } = useUserProfile();
   const [searchParams] = useSearchParams();
   const [language, setLanguage] = useState("English");
   const [selectedDish, setSelectedDish] = useState("");
   
   // Pre-filled form data from URL params
   const [prefilledData, setPrefilledData] = useState(null);
+  
+  // Non-veg warning dialog state
+  const [showNonVegWarning, setShowNonVegWarning] = useState(false);
+  const [pendingFormData, setPendingFormData] = useState(null);
+  const [detectedIngredients, setDetectedIngredients] = useState([]);
 
   const {
     steps,
@@ -42,13 +51,10 @@ export default function Assistant() {
   const firstStepSpokenRef = useRef(false);
   const [timerOwnerIndex, setTimerOwnerIndex] = useState(null);
 
+  // Use profile language as default
   useEffect(() => {
-    const loadUserLanguage = async () => {
-      const userLanguage = await UserService.getUserLanguage(user);
-      setLanguage(userLanguage || "English");
-    };
-    loadUserLanguage();
-  }, [user]);
+    setLanguage(preferredLanguage);
+  }, [preferredLanguage]);
 
   // Extract URL parameters on component mount
   useEffect(() => {
@@ -64,6 +70,7 @@ export default function Assistant() {
       });
       setSelectedDish(dishFromUrl);
       
+      // URL language overrides profile language
       if (languageFromUrl) {
         setLanguage(languageFromUrl);
       }
@@ -118,17 +125,71 @@ export default function Assistant() {
     prefilledData?.notes
   ]);
 
-  const handleFormSubmit = async ({ dishName, servings, notes }) => {
+  const processRecipeRequest = async (formData, userPreferences) => {
+    const { dishName, servings, notes } = formData;
+    
     setSelectedDish(dishName);
-    firstStepSpokenRef.current = false; // reset for new recipe
-    setTimerOwnerIndex(null); // clear any previous timer owner
+    firstStepSpokenRef.current = false;
+    setTimerOwnerIndex(null);
 
     // Update prefilled data to store current form values for recipe saving
     setPrefilledData({ dishName, servings, notes });
 
     // Fire both, but do NOT await nutrition; steps stream to UI
-    fetchNutritionInfo(dishName, servings, notes, language).catch(() => {});
-    fetchRecipeSteps(dishName, servings, notes, language).catch(() => {});
+    fetchNutritionInfo(dishName, servings, notes, language, userPreferences).catch(() => {});
+    fetchRecipeSteps(dishName, servings, notes, language, userPreferences).catch(() => {});
+  };
+
+  const handleFormSubmit = async ({ dishName, servings, notes }) => {
+    // Prepare user preferences for OpenAI service
+    const userPreferences = {
+      dietType,
+      allergies,
+      dislikes,
+      skillLevel
+    };
+
+    // Check if user is vegetarian but requesting non-veg dish
+    if (dietType === 'veg' && DishAnalysisService.isNonVegDish(dishName)) {
+      const detected = DishAnalysisService.getDetectedNonVegIngredients(dishName);
+      setDetectedIngredients(detected);
+      setPendingFormData({ dishName, servings, notes });
+      setShowNonVegWarning(true);
+      return; // Stop here and wait for user decision
+    }
+
+    // If no conflict, proceed normally
+    await processRecipeRequest({ dishName, servings, notes }, userPreferences);
+  };
+
+  const handleNonVegWarningResponse = async (action) => {
+    if (!pendingFormData) return;
+
+    const userPreferences = {
+      dietType,
+      allergies,
+      dislikes,
+      skillLevel
+    };
+
+    if (action === 'vegetarian') {
+      // Modify the dish name to request vegetarian version
+      const vegDishName = `vegetarian ${pendingFormData.dishName}`;
+      await processRecipeRequest({
+        ...pendingFormData,
+        dishName: vegDishName
+      }, userPreferences);
+    } else if (action === 'continue') {
+      // Override diet preference for this request
+      const overriddenPreferences = {
+        ...userPreferences,
+        dietType: 'nonveg' // Override diet preference
+      };
+      await processRecipeRequest(pendingFormData, overriddenPreferences);
+    }
+
+    // Clear pending data
+    setPendingFormData(null);
   };
 
   const handleSpeak = (text) => {
@@ -247,6 +308,18 @@ export default function Assistant() {
           onRepeat={handleRepeat}
           onNext={handleNavigateNext}
           hasSteps={steps.length > 0}
+        />
+
+        {/* Non-Veg Warning Dialog */}
+        <NonVegWarningDialog
+          isOpen={showNonVegWarning}
+          onClose={() => {
+            setShowNonVegWarning(false);
+            setPendingFormData(null);
+          }}
+          onContinue={handleNonVegWarningResponse}
+          dishName={pendingFormData?.dishName}
+          detectedIngredients={detectedIngredients}
         />
       </div>
     </>
