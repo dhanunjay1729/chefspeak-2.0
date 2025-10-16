@@ -1,10 +1,12 @@
 // src/components/Header.jsx
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import { ChefHat, Menu, Settings, LogOut, User, SlidersHorizontal } from "lucide-react";
 
 export default function Header() {
   const navigate = useNavigate();
+  const { logout } = useAuth(); // Get logout function from AuthContext
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -16,6 +18,16 @@ export default function Header() {
     document.addEventListener("mousedown", onClickAway);
     return () => document.removeEventListener("mousedown", onClickAway);
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      setOpen(false);
+      await logout();
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b border-zinc-200">
@@ -64,10 +76,7 @@ export default function Header() {
 
                 <button
                   className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-rose-50 text-rose-600 text-sm"
-                  onClick={() => {
-                    setOpen(false);
-                    navigate("/logout");
-                  }}
+                  onClick={handleLogout}
                 >
                   <LogOut size={18} />
                   Logout
