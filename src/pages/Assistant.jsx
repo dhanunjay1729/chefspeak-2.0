@@ -248,8 +248,8 @@ export default function Assistant() {
             <FavoriteButton 
               recipe={currentRecipe}
               className="w-full justify-center"
-              onFavoriteChange={(favorited) => {
-                // Recipe added to favorites
+              onFavoriteChange={() => {
+                // Recipe favorited/unfavorited - could add notifications here
               }}
             />
           </div>

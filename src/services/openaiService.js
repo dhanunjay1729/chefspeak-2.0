@@ -207,8 +207,9 @@ export class OpenAIService {
                 opts.onText(content);
               }
             }
-          } catch (e) {
+          } catch (err) {
             // Skip invalid JSON lines
+            console.debug("Failed to parse SSE chunk:", err);
           }
         }
       }

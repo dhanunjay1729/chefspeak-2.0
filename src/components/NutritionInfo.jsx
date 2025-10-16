@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+// import { motion } from "framer-motion"; // Unused for now
 
 export function NutritionInfo({ nutritionInfo, isLoading }) {
   if (!nutritionInfo && !isLoading) return null;

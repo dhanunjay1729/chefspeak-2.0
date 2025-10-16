@@ -45,7 +45,9 @@ export default function IngredientsPage() {
       try {
         const arr = JSON.parse(saved);
         if (Array.isArray(arr)) setIngredients(arr);
-      } catch {}
+      } catch (err) {
+        console.error("Failed to parse saved pantry:", err);
+      }
     }
   }, []);
 

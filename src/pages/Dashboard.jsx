@@ -1,5 +1,5 @@
 // src/pages/Dashboard.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useUserProfile } from "../hooks/useUserProfile";
 import { getRecentDishes, deleteRecentDish } from "../services/userService";
@@ -8,13 +8,16 @@ import { Button } from "../components/ui/button";
 import Header from "../components/Header";
 import { Heart, Salad, ChefHat, Compass, X, Loader2 } from "lucide-react";
 
-function ActionTile({ icon: Icon, title, desc, onClick, variant = "default" }) {
+function ActionTile({ icon: IconComponent, title, desc, onClick, variant = "default" }) {
   const base =
     "w-full rounded-2xl border overflow-hidden transition transform hover:-translate-y-0.5 hover:shadow-lg";
   const styles =
     variant === "accent"
       ? "bg-gradient-to-br from-amber-100 via-rose-100 to-fuchsia-100 border-zinc-200"
       : "bg-white/90 border-zinc-200 backdrop-blur";
+  
+  const Icon = IconComponent;
+  
   return (
     <button onClick={onClick} className={`${base} ${styles}`}>
       <div className="flex items-center gap-4 p-4">
@@ -49,7 +52,9 @@ export default function Dashboard() {
       try {
         const data = await getRecentDishes(currentUser.uid, { limit: 20 });
         if (mounted) setItems(data);
-      } catch {} finally {
+      } catch (err) {
+        console.error("Failed to load recent dishes:", err);
+      } finally {
         if (mounted) setLoading(false);
       }
     })();

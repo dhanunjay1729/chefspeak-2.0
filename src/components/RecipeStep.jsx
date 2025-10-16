@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+// import { motion } from "framer-motion"; // Unused for now
 import { Volume2 } from "lucide-react";
 import { Button } from "./ui/button";
 

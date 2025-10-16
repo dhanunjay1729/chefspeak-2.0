@@ -30,4 +30,14 @@ export default [
       ],
     },
   },
+  // Node.js files (server-side code)
+  {
+    files: ['ttsServer.js', 'src/pages/api/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        process: 'readonly',
+      },
+    },
+  },
 ]
