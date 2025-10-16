@@ -16,8 +16,11 @@ backend/dist/
 # Environment / Secrets
 # =========================
 .env
-.env.*.local
+.env*.local
+.env.production
 google-tts-key.json
+*.pem
+*.key
 
 # =========================
 # Logs
@@ -39,8 +42,9 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
+Thumbs.db
 
-# VSCode settings
+# VSCode settings (except recommended extensions)
 .vscode/*
 !.vscode/extensions.json
 .idea/
@@ -64,3 +68,24 @@ env.bak/
 *.tar
 *.gz
 *.rar
+
+# =========================
+# Testing
+# =========================
+coverage/
+.nyc_output/
+*.lcov
+
+# =========================
+# Temporary files
+# =========================
+tmp/
+temp/
+.cache/
+.parcel-cache/
+
+# =========================
+# Build artifacts
+# =========================
+build/
+out/

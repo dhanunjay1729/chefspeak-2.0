@@ -38,7 +38,6 @@ export default async function handler(req, res) {
 
     res.setHeader("Content-Type", "text/event-stream");
     const reader = openAIResponse.body.getReader();
-    const encoder = new TextEncoder();
 
     while (true) {
       const { done, value } = await reader.read();

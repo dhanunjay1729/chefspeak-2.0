@@ -43,6 +43,18 @@ export function useUserProfile() {
   const dislikes = profile?.dislikes || [];
   const skillLevel = profile?.skill || 'beginner';
 
+  // Re-fetch profile function
+  const refreshProfile = async () => {
+    if (!user?.uid) return;
+    try {
+      const profileData = await getUserProfile(user.uid);
+      setProfile(profileData || {});
+    } catch (error) {
+      console.error('Failed to load user profile:', error);
+      setProfile({});
+    }
+  };
+
   return {
     profile,
     loading,
@@ -52,6 +64,6 @@ export function useUserProfile() {
     allergies,
     dislikes,
     skillLevel,
-    refresh: () => loadProfile()
+    refresh: refreshProfile
   };
 }

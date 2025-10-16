@@ -85,7 +85,9 @@ export default function VoiceListener({ onCommand }) {
       log("🧹 Cleanup");
       try {
         recognition.stop();
-      } catch (_) {}
+      } catch {
+        // Ignore errors during cleanup
+      }
       clearTimeout(restartTimeoutRef.current);
     };
   }, [onCommand]);

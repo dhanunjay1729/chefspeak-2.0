@@ -1,7 +1,7 @@
 // src/utils/recipeParser.js
 export class RecipeParser {
   // Boundary like: "1. ", "1) ", "Step 1: "
-  static STEP_BOUNDARY = /(^|\n)\s*(?:Step\s+)?(\d+)[\.\)]\s*:?[\s]+/gmi;
+  static STEP_BOUNDARY = /(^|\n)\s*(?:Step\s+)?(\d+)[.)]\s*:?[\s]+/gmi;
 
   // Supports English + a few Indic terms you already had
   static TIME_REGEX =

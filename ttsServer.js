@@ -1,8 +1,6 @@
 import express from "express";
 import cors from "cors";
 import textToSpeech from "@google-cloud/text-to-speech";
-import fs from "fs";
-import util from "util";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
