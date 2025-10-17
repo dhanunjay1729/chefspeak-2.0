@@ -19,6 +19,12 @@ backend/dist/
 .env.*.local
 google-tts-key.json
 
+# Environment variables
+.env
+server/.env
+.env.local
+.env.*.local
+
 # =========================
 # Logs
 # =========================
