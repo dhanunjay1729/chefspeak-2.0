@@ -1,8 +1,8 @@
 // src/components/SignupForm.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { createUserWithEmailAndPassword, updateProfile, signInWithPopup } from "firebase/auth";
-import { auth, googleProvider } from "../firebase";
+import { createUserWithEmailAndPassword, updateProfile, signInWithRedirect, GoogleAuthProvider, getRedirectResult } from "firebase/auth";
+import { auth } from "../firebase";
 import { Mail, Lock, User, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 
 export default function SignupForm() {
@@ -16,6 +16,22 @@ export default function SignupForm() {
   const [emailError, setEmailError] = useState("");
   const [passwordStrength, setPasswordStrength] = useState(0);
   const navigate = useNavigate();
+
+  // Handle redirect result on component mount
+  useEffect(() => {
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          // User successfully signed in
+          console.log("Signed in:", result.user);
+        }
+      } catch (error) {
+        console.error("Redirect error:", error);
+      }
+    };
+    handleRedirectResult();
+  }, []);
 
   // Strict email validation
   const validateEmail = (email) => {
@@ -114,16 +130,11 @@ export default function SignupForm() {
     setGoogleLoading(true);
 
     try {
-      await signInWithPopup(auth, googleProvider);
-      navigate("/dashboard");
-    } catch (err) {
-      if (err.code === "auth/popup-closed-by-user") {
-        setError("Sign-up cancelled");
-      } else if (err.code === "auth/account-exists-with-different-credential") {
-        setError("An account already exists with this email");
-      } else {
-        setError("Failed to sign up with Google. Please try again.");
-      }
+      const provider = new GoogleAuthProvider();
+      // Use redirect instead of popup
+      await signInWithRedirect(auth, provider);
+    } catch (error) {
+      console.error("Google signup error:", error);
     } finally {
       setGoogleLoading(false);
     }

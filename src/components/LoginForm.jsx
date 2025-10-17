@@ -1,7 +1,7 @@
 // src/components/LoginForm.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithPopup, signInWithRedirect, GoogleAuthProvider, getRedirectResult } from "firebase/auth";
 import { auth, googleProvider } from "../firebase";
 import { Mail, Lock, Loader2, AlertCircle } from "lucide-react";
 
@@ -85,6 +85,29 @@ export default function LoginForm() {
       }
     } finally {
       setGoogleLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          console.log("Signed in:", result.user);
+        }
+      } catch (error) {
+        console.error("Redirect error:", error);
+      }
+    };
+    handleRedirectResult();
+  }, []);
+
+  const handleGoogleLogin = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithRedirect(auth, provider);
+    } catch (error) {
+      console.error("Google login error:", error);
     }
   };
 
