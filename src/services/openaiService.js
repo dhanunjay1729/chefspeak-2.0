@@ -21,7 +21,8 @@ export class OpenAIService {
   }
 
   async fetchNutritionInfo(dish, people, extraNotes, language, userPreferences = {}) {
-    const response = await fetch(`${this.baseUrl}/api/nutrition`, {
+    // Changed from /api/nutrition to /api/recipe/nutrition
+    const response = await fetch(`${this.baseUrl}/api/recipe/nutrition`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -33,8 +34,8 @@ export class OpenAIService {
       }),
     });
     
-    const data = await response.json();
-    return data.nutrition;
+    // This endpoint returns streaming data, not JSON
+    return response;
   }
 
   async suggestRecipesByIngredients(ingredients, opts = {}) {
