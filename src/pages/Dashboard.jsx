@@ -38,6 +38,7 @@ export default function Dashboard() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState({}); // id -> boolean
+  const [showComingSoonAlert, setShowComingSoonAlert] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -81,6 +82,11 @@ export default function Dashboard() {
     }
   };
 
+  const handleExploreClick = () => {
+    setShowComingSoonAlert(true);
+    setTimeout(() => setShowComingSoonAlert(false), 3000);
+  };
+
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-white to-zinc-50">
@@ -98,6 +104,17 @@ export default function Dashboard() {
       <Header />
       <div className="min-h-screen bg-gradient-to-b from-white to-zinc-50">
         <div className="mx-auto max-w-5xl px-4 py-10 space-y-8">
+          {/* Coming Soon Alert */}
+          {showComingSoonAlert && (
+            <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top fade-in">
+              <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 shadow-lg">
+                <p className="text-sm font-medium text-amber-800">
+                  🚀 Explore is coming soon! Stay tuned.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col gap-1">
             <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900">
               Welcome, {displayName}
@@ -123,7 +140,7 @@ export default function Dashboard() {
               icon={Compass}
               title="Explore (coming soon)"
               desc="Discover trending dishes and curated collections."
-              onClick={() => navigate("/explore")}
+              onClick={handleExploreClick}
             />
             <ActionTile
               icon={Heart}

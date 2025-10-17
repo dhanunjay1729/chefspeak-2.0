@@ -169,7 +169,7 @@ export function RecipeForm({ onSubmit, isLoading, initialData }) {
       className="w-full max-w-md bg-gray-100 rounded-xl shadow p-6 mb-8 space-y-4"
     >
       <div>
-        <label className="block font-semibold mb-1">Dish Name</label>
+        <label className="block font-semibold mb-1">What do you want to cook?</label>
         <input
           type="text"
           value={dishName}
