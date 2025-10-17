@@ -123,21 +123,14 @@ export default function Login() {
 
               <LoginForm />
 
-              {/* Divider */}
-              <div className="my-8 flex items-center gap-4">
-                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-400 to-transparent"></div>
-                <p className="text-slate-400 text-sm">or</p>
-                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-400 to-transparent"></div>
-              </div>
-
               {/* Sign up link */}
-              <div className="text-center">
+              <div className="text-center mt-8">
                 <p className="text-slate-300">Don't have an account?</p>
                 <button
                   onClick={() => navigate("/")}
-                  className="mt-3 w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white font-semibold transition-all duration-200 hover:shadow-lg hover:shadow-rose-500/30 active:scale-95"
+                  className="mt-3 text-amber-400 hover:text-amber-300 font-semibold transition-colors"
                 >
-                  Create an Account
+                  Create an Account →
                 </button>
               </div>
 

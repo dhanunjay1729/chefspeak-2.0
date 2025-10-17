@@ -176,9 +176,9 @@ export default function Profile() {
                       onChange={(e) => setField("diet", e.target.value)}
                       className="mt-1 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
                     >
-                      <option value="veg">Veg</option>
+                      <option value="veg">Non-Veg</option>
                       <option value="vegan">Vegan</option>
-                      <option value="nonveg">Non‑veg</option>
+                      <option value="nonveg">Veg</option>
                     </select>
                   </div>
                 </div>
