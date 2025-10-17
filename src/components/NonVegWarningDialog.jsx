@@ -35,6 +35,13 @@ export function NonVegWarningDialog({
             <p className="text-sm text-gray-600 mb-4">
               Would you like to continue anyway, or would you prefer a vegetarian alternative?
             </p>
+            
+            <p className="text-sm text-zinc-600">
+              This dish contains: <span className="font-semibold">{detectedIngredients.join(', ')}</span>
+            </p>
+            <p className="text-sm text-zinc-600 mt-2">
+              <strong>Note:</strong> Choosing "Continue Anyway" will permanently update your diet preference to Non-Vegetarian.
+            </p>
           </div>
           
           <button

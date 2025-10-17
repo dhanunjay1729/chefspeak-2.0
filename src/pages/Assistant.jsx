@@ -17,10 +17,12 @@ import { DishAnalysisService } from "../services/dishAnalysisService";
 import { addRecentDish } from "../services/userService";
 import Header from "../components/Header"; 
 import { useSearchParams } from "react-router-dom";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "../firebase";
 
 export default function Assistant() {
   const { user } = useAuth();
-  const { preferredLanguage, dietType, allergies, dislikes, skillLevel } = useUserProfile();
+  const { preferredLanguage, dietType, allergies, dislikes, skillLevel, refreshProfile } = useUserProfile();
   const [searchParams] = useSearchParams();
   const [language, setLanguage] = useState("English");
   const [selectedDish, setSelectedDish] = useState("");
@@ -106,8 +108,8 @@ export default function Assistant() {
             dishName: selectedDish,
             imageUrl: undefined,
             language,
-            people: prefilledData?.servings || 2, // Use the servings from form
-            notes: prefilledData?.notes || '',   // Use notes from form
+            people: prefilledData?.servings || 2,
+            notes: prefilledData?.notes || '',
             recipeSteps: steps,
             nutritionInfo: nutritionInfo || null,
           });
@@ -154,8 +156,8 @@ export default function Assistant() {
       skillLevel
     };
 
-    // Check if user is vegetarian but requesting non-veg dish
-    if (dietType === 'veg' && DishAnalysisService.isNonVegDish(dishName)) {
+    // Check if user is vegetarian/vegan but requesting non-veg dish
+    if ((dietType === 'veg' || dietType === 'vegan') && DishAnalysisService.isNonVegDish(dishName)) {
       const detected = DishAnalysisService.getDetectedNonVegIngredients(dishName);
       setDetectedIngredients(detected);
       setPendingFormData({ dishName, servings, notes });
@@ -165,6 +167,28 @@ export default function Assistant() {
 
     // If no conflict, proceed normally
     await processRecipeRequest({ dishName, servings, notes }, userPreferences);
+  };
+
+  const updateUserDietPreference = async (newDietType) => {
+    if (!user?.uid) return;
+    
+    try {
+      const userRef = doc(db, "users", user.uid);
+      await updateDoc(userRef, {
+        diet: newDietType,
+        updatedAt: Date.now()
+      });
+      
+      // Refresh the profile hook to get updated preferences
+      if (refreshProfile) {
+        await refreshProfile();
+      }
+      
+      console.log(`Updated user diet preference to: ${newDietType}`);
+    } catch (error) {
+      console.error("Failed to update diet preference:", error);
+      throw error;
+    }
   };
 
   const handleNonVegWarningResponse = async (action) => {
@@ -185,15 +209,33 @@ export default function Assistant() {
         dishName: vegDishName
       }, userPreferences);
     } else if (action === 'continue') {
-      // Override diet preference for this request
-      const overriddenPreferences = {
-        ...userPreferences,
-        dietType: 'nonveg' // Override diet preference
-      };
-      await processRecipeRequest(pendingFormData, overriddenPreferences);
+      // Update user's diet preference in database to 'nonveg'
+      try {
+        await updateUserDietPreference('nonveg');
+        
+        // Now use the updated preference (nonveg) for this request
+        const updatedPreferences = {
+          ...userPreferences,
+          dietType: 'nonveg'
+        };
+        
+        await processRecipeRequest(pendingFormData, updatedPreferences);
+        
+        // Show success message
+        console.log("Your diet preference has been updated to Non-Vegetarian");
+      } catch (error) {
+        console.error("Failed to update diet preference:", error);
+        // Still proceed with the recipe using overridden preference
+        const overriddenPreferences = {
+          ...userPreferences,
+          dietType: 'nonveg'
+        };
+        await processRecipeRequest(pendingFormData, overriddenPreferences);
+      }
     }
 
-    // Clear pending data
+    // Close dialog and clear pending data
+    setShowNonVegWarning(false);
     setPendingFormData(null);
   };
 
