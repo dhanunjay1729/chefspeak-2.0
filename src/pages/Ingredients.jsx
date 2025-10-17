@@ -49,6 +49,19 @@ export default function IngredientsPage() {
     }
   }, []);
 
+  // Load suggestions from localStorage on mount
+  useEffect(() => {
+    const savedSuggestions = localStorage.getItem("chefspeak.suggestions");
+    if (savedSuggestions) {
+      try {
+        const parsed = JSON.parse(savedSuggestions);
+        if (Array.isArray(parsed)) {
+          setSuggestions(parsed);
+        }
+      } catch {}
+    }
+  }, []);
+
   const normalizedSet = useMemo(
     () =>
       new Set(
@@ -82,25 +95,19 @@ export default function IngredientsPage() {
     setSuggestions([]);
   };
 
-  const imgFor = (name, i = 0) =>
-    `https://source.unsplash.com/featured/?${encodeURIComponent(
-      name
-    )},food&sig=${i}`;
-
   const onGetSuggestions = async () => {
     if (ingredients.length === 0) return;
     setLoading(true);
     try {
-      const svc = new OpenAIService(); // reads VITE_OPENAI_API_KEY if you kept client-side
+      const svc = new OpenAIService();
       const resp = await svc.suggestRecipesByIngredients(ingredients);
       const list = (Array.isArray(resp) ? resp : [])
         .slice(0, 5)
         .map((r, i) =>
           typeof r === "string"
-            ? { name: r, img: imgFor(r, i) }
+            ? { name: r }
             : {
                 name: r?.name || r?.title || "",
-                img: r?.img || imgFor(r?.name || `dish-${i}`, i),
               }
         )
         .filter((x) => x.name);
@@ -117,6 +124,12 @@ export default function IngredientsPage() {
   };
 
   const openDish = (name) => {
+    // Save current suggestions to localStorage before navigating
+    localStorage.setItem(
+      "chefspeak.suggestions",
+      JSON.stringify(suggestions)
+    );
+    
     const qs = new URLSearchParams({
       dish: name,
       ingredients: ingredients.join(", "),
@@ -139,9 +152,6 @@ export default function IngredientsPage() {
         <div className="mx-auto max-w-6xl px-4 pt-10 pb-16 space-y-10">
           {/* Hero */}
           <section className="text-center space-y-3">
-            <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white/80 px-3 py-1 text-xs text-zinc-700 backdrop-blur">
-              <Wand2 size={14} /> Pantry → Ideas in one tap
-            </div>
             <h1 className="text-4xl font-extrabold tracking-tight text-zinc-900">
               Cook with your <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-600 via-rose-600 to-fuchsia-600">ingredients</span>
             </h1>
@@ -275,7 +285,7 @@ export default function IngredientsPage() {
             {!loading && suggestions.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-zinc-300 bg-white/60 p-6 text-center text-sm text-zinc-600">
                 {hasAny
-                  ? "No suggestions yet. Try again or add 1–2 more items."
+                  ? "No suggestions yet. Tap 'Get Suggestions' above."
                   : "Add ingredients to get ideas."}
               </div>
             ) : loading ? (
@@ -285,7 +295,7 @@ export default function IngredientsPage() {
                     key={i}
                     className="rounded-2xl overflow-hidden border border-zinc-200 bg-white shadow-sm animate-pulse"
                   >
-                    <div className="aspect-video bg-zinc-100" />
+                    <div className="h-12 bg-zinc-100" />
                     <div className="p-3 space-y-2">
                       <div className="h-4 bg-zinc-100 rounded" />
                       <div className="h-3 bg-zinc-100 rounded w-1/2" />
@@ -299,29 +309,13 @@ export default function IngredientsPage() {
                   <button
                     key={s.name + i}
                     onClick={() => openDish(s.name)}
-                    className="group relative text-left rounded-2xl overflow-hidden border border-zinc-200 bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition"
+                    className="group relative text-left rounded-2xl overflow-hidden border border-zinc-200 bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition p-4"
                   >
-                    <div className="aspect-video overflow-hidden">
-                      <img
-                        src={s.img || imgFor(s.name, i)}
-                        alt={s.name}
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                        loading="lazy"
-                      />
-                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent opacity-90" />
-                      <div className="absolute bottom-2 left-2 right-2">
-                        <div className="inline-flex rounded-full bg-white/85 px-2 py-1 text-[11px] font-medium text-zinc-800 backdrop-blur">
-                          Idea
-                        </div>
-                      </div>
+                    <div className="font-medium line-clamp-1 text-zinc-900">
+                      {s.name}
                     </div>
-                    <div className="p-3">
-                      <div className="font-medium line-clamp-1 text-zinc-900">
-                        {s.name}
-                      </div>
-                      <div className="text-xs text-zinc-600 mt-1">
-                        Tap to start cooking
-                      </div>
+                    <div className="text-xs text-zinc-600 mt-2">
+                      Tap to start cooking
                     </div>
                   </button>
                 ))}
@@ -329,17 +323,6 @@ export default function IngredientsPage() {
             )}
           </section>
 
-          {/* Footer CTA */}
-          <div className="pt-2">
-            <Button
-              variant="secondary"
-              onClick={() => navigate("/assistant")}
-              className="gap-2 h-11"
-            >
-              <ChefHat size={18} />
-              Go to Assistant
-            </Button>
-          </div>
         </div>
       </main>
     </>

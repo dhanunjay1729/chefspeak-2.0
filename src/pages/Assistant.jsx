@@ -61,12 +61,17 @@ export default function Assistant() {
     const dishFromUrl = searchParams.get('dish');
     const peopleFromUrl = searchParams.get('people');
     const languageFromUrl = searchParams.get('language');
+    const ingredientsFromUrl = searchParams.get('ingredients');
     
     if (dishFromUrl) {
+      const notes = ingredientsFromUrl 
+        ? `Use these ingredients: ${ingredientsFromUrl}`
+        : '';
+      
       setPrefilledData({
         dishName: dishFromUrl,
         servings: peopleFromUrl ? parseInt(peopleFromUrl, 10) : 2,
-        notes: ''
+        notes: notes
       });
       setSelectedDish(dishFromUrl);
       
