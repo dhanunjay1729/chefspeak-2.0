@@ -1,7 +1,7 @@
 // src/services/ttsService.js
 export class TTSService {
-  constructor(baseUrl = "http://localhost:3001") {
-    this.baseUrl = baseUrl;
+  constructor() {
+    this.baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3002';
   }
 
   async speak(text, language) {
@@ -12,12 +12,17 @@ export class TTSService {
         body: JSON.stringify({ text, language }),
       });
 
+      if (!response.ok) {
+        throw new Error(`TTS request failed: ${response.status}`);
+      }
+
       const audioBlob = await response.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
       await audio.play();
     } catch (error) {
       console.error("TTS Error:", error);
+      throw error;
     }
   }
 }

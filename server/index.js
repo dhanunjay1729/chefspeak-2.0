@@ -2,6 +2,13 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import OpenAI from 'openai';
+import textToSpeech from '@google-cloud/text-to-speech';
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+// Fix __dirname in ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
@@ -12,6 +19,27 @@ const PORT = process.env.PORT || 3002;
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+// Initialize Google TTS
+let ttsClient;
+try {
+  // For local development
+  if (process.env.GOOGLE_TTS_KEY_PATH) {
+    ttsClient = new textToSpeech.TextToSpeechClient({
+      keyFilename: process.env.GOOGLE_TTS_KEY_PATH,
+    });
+  } 
+  // For production (using service account JSON from env variable)
+  else if (process.env.GOOGLE_TTS_CREDENTIALS) {
+    const credentials = JSON.parse(process.env.GOOGLE_TTS_CREDENTIALS);
+    ttsClient = new textToSpeech.TextToSpeechClient({
+      credentials,
+    });
+  }
+  console.log('✅ Google TTS client initialized');
+} catch (err) {
+  console.error('❌ Google TTS initialization failed:', err);
+}
 
 app.use(cors());
 app.use(express.json());
@@ -245,6 +273,39 @@ app.get('/api/search', async (req, res) => {
   } catch (error) {
     console.error('Search error:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// TTS endpoint
+app.post('/api/speak', async (req, res) => {
+  const { text, language } = req.body;
+
+  const languageVoiceMap = {
+    english: 'en-IN-Wavenet-D',
+    hindi: 'hi-IN-Wavenet-C',
+    telugu: 'te-IN-Standard-A',
+    tamil: 'ta-IN-Standard-A',
+  };
+
+  const voiceName = languageVoiceMap[language?.toLowerCase()] || 'en-IN-Wavenet-D';
+  const languageCode = voiceName.split('-').slice(0, 2).join('-');
+
+  try {
+    if (!ttsClient) {
+      throw new Error('TTS client not initialized');
+    }
+
+    const [response] = await ttsClient.synthesizeSpeech({
+      input: { text },
+      voice: { languageCode, name: voiceName },
+      audioConfig: { audioEncoding: 'MP3' },
+    });
+
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.send(response.audioContent);
+  } catch (error) {
+    console.error('TTS Error:', error);
+    res.status(500).json({ error: 'TTS generation failed' });
   }
 });
 

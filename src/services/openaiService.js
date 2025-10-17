@@ -1,63 +1,44 @@
 // src/services/openaiService.js
 export class OpenAIService {
   constructor() {
-    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3002';
+    this.baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3002';
   }
 
   async fetchRecipeSteps(dish, people, extraNotes, language, userPreferences = {}, opts = {}) {
-    const response = await fetch(`${this.baseURL}/api/recipe/steps`, {
+    const response = await fetch(`${this.baseUrl}/api/recipe/steps`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        dish,
-        people,
-        extraNotes,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        dish, 
+        people, 
+        extraNotes, 
         language,
-        userPreferences,
+        userPreferences 
       }),
     });
-
-    if (!response.ok) {
-      throw new Error(`Server error: ${response.statusText}`);
-    }
-
-    if (!response.body) {
-      throw new Error('Streaming not supported');
-    }
-
-    return await this.parseStreamingResponse(response, opts);
+    
+    return response;
   }
 
   async fetchNutritionInfo(dish, people, extraNotes, language, userPreferences = {}) {
-    const response = await fetch(`${this.baseURL}/api/recipe/nutrition`, {
+    const response = await fetch(`${this.baseUrl}/api/nutrition`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        dish,
-        people,
-        extraNotes,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        dish, 
+        people, 
+        extraNotes, 
         language,
-        userPreferences,
+        userPreferences 
       }),
     });
-
-    if (!response.ok) {
-      throw new Error(`Server error: ${response.statusText}`);
-    }
-
-    if (!response.body) {
-      throw new Error('Streaming not supported');
-    }
-
-    return await this.parseStreamingResponse(response);
+    
+    const data = await response.json();
+    return data.nutrition;
   }
 
   async suggestRecipesByIngredients(ingredients, opts = {}) {
-    const response = await fetch(`${this.baseURL}/api/recipe/suggest`, {
+    const response = await fetch(`${this.baseUrl}/api/recipe/suggest`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -121,27 +102,15 @@ export class OpenAIService {
 
   // Image search (proxied through backend)
   async searchImage(query) {
-    const response = await fetch(
-      `${this.baseURL}/api/images/search?query=${encodeURIComponent(query)}`
-    );
-    
-    if (!response.ok) {
-      throw new Error(`Image search failed: ${response.statusText}`);
-    }
-    
-    return await response.json();
+    const response = await fetch(`${this.baseUrl}/api/search-image?q=${encodeURIComponent(query)}`);
+    const data = await response.json();
+    return data.imageUrl;
   }
 
   // Google search (proxied through backend)
   async googleSearch(query) {
-    const response = await fetch(
-      `${this.baseURL}/api/search?query=${encodeURIComponent(query)}`
-    );
-    
-    if (!response.ok) {
-      throw new Error(`Search failed: ${response.statusText}`);
-    }
-    
-    return await response.json();
+    const response = await fetch(`${this.baseUrl}/api/google-search?q=${encodeURIComponent(query)}`);
+    const data = await response.json();
+    return data.results;
   }
 }
