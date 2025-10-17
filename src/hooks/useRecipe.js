@@ -22,9 +22,7 @@ export function useRecipe() {
   const [nutritionInfo, setNutritionInfo] = useState("");
   const [isLoadingNutrition, setIsLoadingNutrition] = useState(false);
 
-  const openAIService = new OpenAIService(import.meta.env.VITE_OPENAI_API_KEY);
-
-  // buffer that holds the tail of the stream that may not yet contain a full step
+  const openAIService = new OpenAIService();
   const parseBufferRef = useRef("");
 
   const fetchRecipeSteps = async (dish, people, extraNotes, language, userPreferences = {}) => {
@@ -34,34 +32,41 @@ export function useRecipe() {
     parseBufferRef.current = "";
 
     try {
-      const fullText = await openAIService.fetchRecipeSteps(
+      // Get the response object
+      const response = await openAIService.fetchRecipeSteps(
         dish,
         people,
         extraNotes,
         language,
-        userPreferences, // Pass user preferences
-        {
-          onText: (token) => {
-            parseBufferRef.current += token;
-
-            const { steps: newOnes, remaining } = RecipeParser.extractStreamSteps(
-              parseBufferRef.current
-            );
-
-            if (newOnes.length) {
-              setSteps((prev) => dedupeByText([...prev, ...newOnes]));
-            }
-            parseBufferRef.current = remaining;
-          },
-          onDone: (finalText) => {
-            // Flush & dedupe once more at completion
-            const finalParsed = RecipeParser.parseSteps(finalText);
-            setSteps((prev) => dedupeByText([...prev, ...finalParsed]));
-          },
-        }
+        userPreferences
       );
 
-      // Return final steps for compatibility
+      // Check if response is ok
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Server error: ${response.status} - ${errorText}`);
+      }
+
+      // Parse the streaming response
+      const fullText = await openAIService.parseStreamingResponse(response, {
+        onText: (token) => {
+          parseBufferRef.current += token;
+
+          const { steps: newOnes, remaining } = RecipeParser.extractStreamSteps(
+            parseBufferRef.current
+          );
+
+          if (newOnes.length) {
+            setSteps((prev) => dedupeByText([...prev, ...newOnes]));
+          }
+          parseBufferRef.current = remaining;
+        },
+        onDone: (finalText) => {
+          const finalParsed = RecipeParser.parseSteps(finalText);
+          setSteps((prev) => dedupeByText([...prev, ...finalParsed]));
+        },
+      });
+
       return RecipeParser.parseSteps(fullText);
     } catch (err) {
       console.error("❌ Error fetching recipe steps:", err);
@@ -74,13 +79,24 @@ export function useRecipe() {
   const fetchNutritionInfo = async (dish, people, extraNotes, language, userPreferences = {}) => {
     try {
       setIsLoadingNutrition(true);
-      const nutritionText = await openAIService.fetchNutritionInfo(
+      
+      // Get the response
+      const response = await openAIService.fetchNutritionInfo(
         dish,
         people,
         extraNotes,
         language,
-        userPreferences // Pass user preferences
+        userPreferences
       );
+
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      // Parse as JSON (not streaming)
+      const data = await response.json();
+      const nutritionText = JSON.stringify(data.nutrition, null, 2);
+      
       setNutritionInfo(nutritionText);
       return nutritionText;
     } catch (err) {
