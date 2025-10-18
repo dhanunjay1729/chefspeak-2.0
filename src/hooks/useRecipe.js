@@ -79,6 +79,7 @@ export function useRecipe() {
   const fetchNutritionInfo = async (dish, people, extraNotes, language, userPreferences = {}) => {
     try {
       setIsLoadingNutrition(true);
+      setNutritionInfo(""); // Clear previous
       
       // Get the response
       const response = await openAIService.fetchNutritionInfo(
@@ -93,12 +94,18 @@ export function useRecipe() {
         throw new Error(`Server error: ${response.status}`);
       }
 
-      // Parse as JSON (not streaming)
-      const data = await response.json();
-      const nutritionText = JSON.stringify(data.nutrition, null, 2);
-      
-      setNutritionInfo(nutritionText);
-      return nutritionText;
+      // Parse as streaming response (same as recipe steps)
+      const fullText = await openAIService.parseStreamingResponse(response, {
+        onText: (token) => {
+          // Update nutrition info progressively as it streams
+          setNutritionInfo((prev) => prev + token);
+        },
+        onDone: (finalText) => {
+          setNutritionInfo(finalText);
+        },
+      });
+
+      return fullText;
     } catch (err) {
       console.error("❌ Error fetching nutrition info:", err);
       setNutritionInfo("Unable to fetch nutrition information at this time.");
