@@ -54,29 +54,29 @@ Try it out: **[chefspeak.vercel.app](https://chefspeak.vercel.app)**
 - Unsplash API key (optional)
 
 ### 1. Clone the Repository
-\`\`\`bash
+```bash
 git clone https://github.com/dhanunjay1729/chefspeak.git
 cd chefspeak
-\`\`\`
+```
 
 ### 2. Install Dependencies
 
 **Frontend:**
-\`\`\`bash
+```bash
 npm install
-\`\`\`
+```
 
 **Backend:**
-\`\`\`bash
+```bash
 cd server
 npm install
 cd ..
-\`\`\`
+```
 
 ### 3. Environment Configuration
 
-**Frontend (\`.env\`):**
-\`\`\`bash
+**Frontend (`.env`):**
+```bash
 # Firebase Configuration
 VITE_FIREBASE_API_KEY=your_firebase_api_key
 VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
@@ -88,10 +88,10 @@ VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
 
 # Backend API URL
 VITE_API_BASE_URL=http://localhost:3002
-\`\`\`
+```
 
-**Backend (\`server/.env\`):**
-\`\`\`bash
+**Backend (`server/.env`):**
+```bash
 # OpenAI API Key
 OPENAI_API_KEY=sk-proj-your_openai_key
 
@@ -101,41 +101,38 @@ GOOGLE_TTS_CREDENTIALS={"type":"service_account",...}
 # For local development
 GOOGLE_TTS_KEY_PATH=../google-tts-key.json
 
-# Optional: Unsplash API
-UNSPLASH_API_KEY=your_unsplash_key
-
 # Port
 PORT=3002
-\`\`\`
+```
 
 ### 4. Run Locally
 
 **Start Backend:**
-\`\`\`bash
+```bash
 cd server
 npm run dev
-\`\`\`
+```
 
 **Start Frontend (in another terminal):**
-\`\`\`bash
+```bash
 npm run dev
-\`\`\`
+```
 
-Visit \`http://localhost:5173\` 🎉
+Visit `http://localhost:5173` 🎉
 
 ## 🌐 Deployment
 
 ### Deploy to Vercel (Frontend)
 
 1. Install Vercel CLI:
-\`\`\`bash
+```bash
 npm i -g vercel
-\`\`\`
+```
 
 2. Deploy:
-\`\`\`bash
+```bash
 vercel --prod
-\`\`\`
+```
 
 3. Add environment variables in Vercel dashboard
 
@@ -143,13 +140,13 @@ vercel --prod
 
 1. Create a new Web Service on [Render](https://render.com)
 2. Connect your GitHub repository
-3. Set **Root Directory** to \`server\`
-4. Set **Build Command** to \`npm install\`
-5. Set **Start Command** to \`npm start\`
+3. Set **Root Directory** to `server`
+4. Set **Build Command** to `npm install`
+5. Set **Start Command** to `npm start`
 6. Add environment variables:
-   - \`OPENAI_API_KEY\`
-   - \`GOOGLE_TTS_CREDENTIALS\` (single-line JSON)
-   - \`PORT=3002\`
+   - `OPENAI_API_KEY`
+   - `GOOGLE_TTS_CREDENTIALS` (single-line JSON)
+   - `PORT=3002`
 
 ## 📱 Usage
 
@@ -194,7 +191,7 @@ ChefSpeak automatically detects time-related instructions like:
 
 ## 📂 Project Structure
 
-\`\`\`
+```bash
 Chefspeak/
 ├── src/
 │   ├── components/      # Reusable UI components
@@ -208,16 +205,16 @@ Chefspeak/
 │   └── package.json     # Backend dependencies
 ├── public/              # Static assets
 └── vercel.json          # Vercel deployment config
-\`\`\`
+```
 
 ## 🤝 Contributing
 
 Contributions are welcome! Here's how:
 
 1. Fork the repository
-2. Create a feature branch (\`git checkout -b feature/AmazingFeature\`)
-3. Commit changes (\`git commit -m 'Add AmazingFeature'\`)
-4. Push to branch (\`git push origin feature/AmazingFeature\`)
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
 **Note:** All contributions must comply with the CC BY-NC-SA 4.0 license (non-commercial use only).
