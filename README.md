@@ -3,7 +3,7 @@
 > Transform your cooking experience with voice-guided recipes, smart timers, and personalized dietary preferences.
 
 [![Live Demo](https://img.shields.io/badge/Live-Demo-green?style=for-the-badge)](https://chefspeak.vercel.app)
-[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
+[![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg?style=for-the-badge)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 
 ## 📖 Overview
 
@@ -165,7 +165,7 @@ vercel --prod
 ### 3. Cook with Voice Guidance
 - Tap the speaker icon to hear each step
 - Smart timers automatically detect cooking times
-- Navigate with voice commands: "Next", "Back", "Repeat"
+- Navigate with commands: "Next", "Back", "Repeat"
 
 ### 4. Customize Your Experience
 - Set dietary restrictions (Vegetarian, Vegan, Non-Veg)
@@ -174,7 +174,7 @@ vercel --prod
 
 ## 🎯 Features in Detail
 
-### Voice Commands
+### Commands
 - **"Next"** - Move to next step
 - **"Back"** - Go to previous step
 - **"Repeat"** - Replay current step
@@ -220,39 +220,40 @@ Contributions are welcome! Here's how:
 4. Push to branch (\`git push origin feature/AmazingFeature\`)
 5. Open a Pull Request
 
-## 🐛 Known Issues & Limitations
-
-- Voice recognition works best in Chrome/Edge browsers
-- TTS requires backend server (not available in offline mode)
-- Free tier Render may spin down after inactivity (~30s cold start)
-- Recipe generation quality depends on OpenAI API availability
+**Note:** All contributions must comply with the CC BY-NC-SA 4.0 license (non-commercial use only).
 
 ## 🗺️ Roadmap
 
+- [ ] Dark mode support
 - [ ] Meal planning calendar
 - [ ] Shopping list generation
 - [ ] Video recipe integration
 - [ ] Social sharing features
 - [ ] Recipe rating & reviews
 - [ ] Advanced search filters
-- [ ] Cooking mode with larger fonts
-- [ ] Dark mode support
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License**.
+
+**What this means:**
+- ✅ You can copy, modify, and share this project
+- ✅ You must give credit to the original author
+- ❌ You cannot use this for commercial purposes
+- ⚠️ Any modifications must use the same license
+
+See the [LICENSE](LICENSE) file for full details.
 
 ## 🙏 Acknowledgments
 
 - **OpenAI** for GPT-4 API
 - **Google Cloud** for Text-to-Speech
 - **Firebase** for authentication & database
-- **Unsplash** for beautiful food imagery
 - **Vercel** & **Render** for hosting
 
 ## 📧 Contact
 
-**Dhanunjay** - [pantadhanunjay@gmail.com]
+**Dhanunjay** - pantadhanunjay@gmail.com
 
 Project Link: [https://github.com/dhanunjay1729/chefspeak](https://github.com/dhanunjay1729/chefspeak)
 
@@ -260,7 +261,7 @@ Project Link: [https://github.com/dhanunjay1729/chefspeak](https://github.com/dh
 
 <div align="center">
   
-**Made with ❤️ and 🍳 by Dhanunjay**
+**Made with ❤️ by Dhanunjay**
 
 [⭐ Star this repo](https://github.com/dhanunjay1729/chefspeak) | [🐛 Report Bug](https://github.com/dhanunjay1729/chefspeak/issues) | [💡 Request Feature](https://github.com/dhanunjay1729/chefspeak/issues)
 
