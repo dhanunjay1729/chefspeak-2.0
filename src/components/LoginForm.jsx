@@ -1,4 +1,6 @@
 // src/components/LoginForm.jsx
+// this code is responsible for rendering a login form that allows users to sign in using email/password or Google sign-in.
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { signInWithEmailAndPassword, signInWithPopup, signInWithRedirect, GoogleAuthProvider, getRedirectResult } from "firebase/auth";

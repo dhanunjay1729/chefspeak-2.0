@@ -1,6 +1,9 @@
 // src/components/SignupForm.jsx
+// this code is responsible for rendering a signup form that allows users to create an account using email/password or Google sign-in.
+import React from "react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+// Import Firebase Auth functions for user creation, profile update, Google sign-in, and redirect result handling
 import { createUserWithEmailAndPassword, updateProfile, signInWithRedirect, GoogleAuthProvider, getRedirectResult } from "firebase/auth";
 import { auth } from "../firebase";
 import { Mail, Lock, User, Loader2, AlertCircle, CheckCircle } from "lucide-react";

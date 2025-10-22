@@ -1,17 +1,39 @@
 // src/pages/Profile.jsx
+// User profile page for viewing and editing personal information and preferences.
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth, db } from "../firebase";
+// Firestore functions for document handling(here the doc is user profile)
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import Header from "../components/Header";
 import { LogOut, Save, X, Loader2, AlertCircle, Info } from "lucide-react";
 
+// Updated language list to match all supported TTS languages in index.js
 const LANGS = [
-  { code: "en", name: "English" },
-  { code: "hi", name: "Hindi" },
-  { code: "te", name: "Telugu" },
-  { code: "ta", name: "Tamil" },
+  // Indian Languages
+  { code: "Indian_english", name: "Indian English" },
+  { code: "hindi", name: "Hindi" },
+  { code: "telugu", name: "Telugu" },
+  { code: "tamil", name: "Tamil" },
+  { code: "kannada", name: "Kannada" },
+  { code: "malayalam", name: "Malayalam" },
+  { code: "marathi", name: "Marathi" },
+  { code: "gujarati", name: "Gujarati" },
+  { code: "bengali", name: "Bengali" },
+  { code: "punjabi", name: "Punjabi" },
+  
+  // International Languages
+  { code: "US_english", name: "US English" },
+  { code: "UK_english", name: "UK English" },
+  { code: "spanish", name: "Spanish" },
+  { code: "french", name: "French" },
+  { code: "german", name: "German" },
+  { code: "italian", name: "Italian" },
+  { code: "japanese", name: "Japanese" },
+  { code: "chinese", name: "Chinese (Mandarin)" },
+  { code: "russian", name: "Russian" },
 ];
 
 const DIET_OPTIONS = [
@@ -43,9 +65,9 @@ export default function Profile() {
 
   const [form, setForm] = useState({
     displayName: "",
-    preferredLanguage: "en",
+    preferredLanguage: "Indian_english", // Changed default to match index.js
     skill: "beginner",
-    diet: "nonveg", // Changed default to "nonveg"
+    diet: "nonveg",
     allergies: [],
     dislikes: [],
   });
@@ -63,9 +85,9 @@ export default function Profile() {
       const data = snap.exists() ? snap.data() : {};
       const seed = {
         displayName: data.displayName || user.displayName || "",
-        preferredLanguage: data.preferredLanguage || "en",
+        preferredLanguage: data.preferredLanguage || "indian_english", // Changed default
         skill: data.skill || "beginner",
-        diet: data.diet || "nonveg", // Changed default to "nonveg"
+        diet: data.diet || "nonveg",
         allergies: data.allergies || [],
         dislikes: data.dislikes || [],
       };
@@ -98,6 +120,7 @@ export default function Profile() {
     }
   };
 
+  // Confirm the diet change after warning
   const confirmDietChange = () => {
     if (pendingDietChange) {
       setField("diet", pendingDietChange);
@@ -106,11 +129,13 @@ export default function Profile() {
     }
   };
 
+  // Cancel the diet change
   const cancelDietChange = () => {
     setPendingDietChange(null);
     setShowDietChangeWarning(false);
   };
 
+  // Save profile changes to Firestore
   const save = async () => {
     if (!user || saving) return;
     setSaving(true);
@@ -129,6 +154,7 @@ export default function Profile() {
   };
 
   if (loading) {
+    // Show loading skeleton
     return (
       <>
         <Header />
@@ -255,11 +281,24 @@ export default function Profile() {
                       onChange={(e) => setField("preferredLanguage", e.target.value)}
                       className="mt-1 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
                     >
-                      {LANGS.map((l) => (
-                        <option key={l.code} value={l.code}>
-                          {l.name}
-                        </option>
-                      ))}
+                      <optgroup label="Indian Languages">
+                        {LANGS.filter(l => 
+                          ['Indian_english', 'hindi', 'telugu', 'tamil', 'kannada', 'malayalam', 'marathi', 'gujarati', 'bengali', 'punjabi'].includes(l.code)
+                        ).map((l) => (
+                          <option key={l.code} value={l.code}>
+                            {l.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="International Languages">
+                        {LANGS.filter(l => 
+                          ['US_english', 'UK_english', 'spanish', 'french', 'german', 'italian', 'japanese', 'chinese', 'russian'].includes(l.code)
+                        ).map((l) => (
+                          <option key={l.code} value={l.code}>
+                            {l.name}
+                          </option>
+                        ))}
+                      </optgroup>
                     </select>
                   </div>
                   <div>

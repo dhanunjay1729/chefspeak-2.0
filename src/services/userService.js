@@ -1,6 +1,6 @@
 // src/services/userService.js
+// this code provides a service wrapper around Firebase Firestore to fetch user-specific data
 
-//service wrapper around Firebase Firestore to fetch user-specific data 
 import {
   doc,
   getDoc,
@@ -20,12 +20,14 @@ import { db } from "../firebase";
 // Helper to reference a user's doc
 const usersRef = (uid) => doc(db, "users", uid);
 
+// Fetch user's preferred language 
 export class UserService {
   static async getUserLanguage(user) {
     if (!user) return "English";
     
     try {
       const docRef = doc(db, "users", user.uid);
+      // docSnap represents the document snapshot
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const data = docSnap.data();
@@ -64,6 +66,7 @@ export async function getRecentDishes(uid, { limit = 12 } = {}) {
   const colRef = collection(db, "users", uid, "recentDishes");
   const q = query(colRef, orderBy("createdAt", "desc"), qLimit(limit));
   const snap = await getDocs(q);
+  // it returns an array of recent dishes with their IDs and data.
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
@@ -74,7 +77,8 @@ export async function getDishById(uid, dishId) {
   // First try recent dishes
   let ref = doc(db, "users", uid, "recentDishes", dishId);
   let snap = await getDoc(ref);
-  
+
+  // if found in recent dishes, return the dish data
   if (snap.exists()) {
     return { id: snap.id, ...snap.data() };
   }

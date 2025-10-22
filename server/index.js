@@ -105,10 +105,14 @@ app.post('/api/recipe/steps', async (req, res) => {
       ],
     });
 
+    // res here is sent by express to the client
+    // text/event-stream is used for server-sent events (SSE), in simple words it allows streaming data to the client
+    // no-cache and keep-alive are used to ensure the connection stays open for streaming
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
+    // for each chunk of data received from openai, extract the content and send it as a new event to the client
     for await (const chunk of stream) {
       const content = chunk.choices[0]?.delta?.content || '';
       if (content) {
@@ -261,6 +265,7 @@ app.get('/api/images/search', async (req, res) => {
 });
 
 // Google Custom Search endpoint
+// this code uses google custom search api to search for recipes on the web
 app.get('/api/search', async (req, res) => {
   try {
     const { query } = req.query;
@@ -280,15 +285,41 @@ app.get('/api/search', async (req, res) => {
 app.post('/api/speak', async (req, res) => {
   const { text, language } = req.body;
 
+  // 🔍 DEBUG: Log what we receive
+  console.log('🎤 TTS Request:', { 
+    textPreview: text?.substring(0, 50) + '...', 
+    language,
+    languageLower: language?.toLowerCase() 
+  });
+
+  // Map with LOWERCASE keys to match .toLowerCase() conversion
   const languageVoiceMap = {
-    english: 'en-IN-Wavenet-D',
-    hindi: 'hi-IN-Wavenet-C',
-    telugu: 'te-IN-Standard-A',
-    tamil: 'ta-IN-Standard-A',
+    indian_english: 'en-IN-Chirp-HD-O',
+    us_english: 'en-US-Chirp3-HD-Aoede',
+    uk_english: 'en-GB-Chirp3-HD-Leda',
+    hindi: 'hi-IN-Chirp3-HD-Leda',
+    telugu: 'te-IN-Chirp3-HD-Leda',
+    tamil: 'ta-IN-Chirp3-HD-Leda',
+    kannada: 'kn-IN-Chirp3-HD-Leda',
+    malayalam: 'ml-IN-Chirp3-HD-Leda',
+    marathi: 'mr-IN-Chirp3-HD-Leda',
+    gujarati: 'gu-IN-Chirp3-HD-Leda',
+    bengali: 'bn-IN-Chirp3-HD-Leda',
+    punjabi: 'pa-IN-Chirp3-HD-Leda',
+    spanish: 'es-ES-Chirp3-HD-Leda',
+    french: 'fr-FR-Chirp3-HD-Leda',
+    german: 'de-DE-Chirp3-HD-Leda',
+    italian: 'it-IT-Chirp3-HD-Leda',
+    japanese: 'ja-JP-Chirp3-HD-Achernar',
+    chinese: 'cmn-CN-Chirp3-HD-Leda',
+    russian: 'ru-RU-Chirp3-HD-Leda',
   };
 
   const voiceName = languageVoiceMap[language?.toLowerCase()] || 'en-IN-Wavenet-D';
   const languageCode = voiceName.split('-').slice(0, 2).join('-');
+
+  // 🔍 DEBUG: Log what voice we're using
+  console.log('🗣️ Using voice:', voiceName, 'for language code:', languageCode);
 
   try {
     if (!ttsClient) {
@@ -301,11 +332,13 @@ app.post('/api/speak', async (req, res) => {
       audioConfig: { audioEncoding: 'MP3' },
     });
 
+    console.log('✅ TTS success, audio length:', response.audioContent?.length);
+
     res.setHeader('Content-Type', 'audio/mpeg');
     res.send(response.audioContent);
   } catch (error) {
-    console.error('TTS Error:', error);
-    res.status(500).json({ error: 'TTS generation failed' });
+    console.error('❌ TTS Error:', error.message);
+    res.status(500).json({ error: 'TTS generation failed', details: error.message });
   }
 });
 
