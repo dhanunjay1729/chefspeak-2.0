@@ -54,7 +54,7 @@ app.post('/api/recipe/steps', async (req, res) => {
   try {
     const { dish, people, extraNotes, language, userPreferences } = req.body;
 
-    let prompt = `Give me a clear, numbered, step-by-step recipe for ${dish} for ${people} people.`;
+    let prompt = `Give me a clear, numbered, step-by-step recipe for ${dish} for ${people} people. And the first step should be the list of ingredients required with their quantities.(make the first line catchy)`;
 
     // Add dietary restrictions
     if (userPreferences?.dietType) {
