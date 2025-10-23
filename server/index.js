@@ -23,14 +23,11 @@ const openai = new OpenAI({
 // Initialize Google TTS
 let ttsClient;
 try {
-  // For local development
   if (process.env.GOOGLE_TTS_KEY_PATH) {
     ttsClient = new textToSpeech.TextToSpeechClient({
       keyFilename: process.env.GOOGLE_TTS_KEY_PATH,
     });
-  } 
-  // For production (using service account JSON from env variable)
-  else if (process.env.GOOGLE_TTS_CREDENTIALS) {
+  } else if (process.env.GOOGLE_TTS_CREDENTIALS) {
     const credentials = JSON.parse(process.env.GOOGLE_TTS_CREDENTIALS);
     ttsClient = new textToSpeech.TextToSpeechClient({
       credentials,
@@ -41,7 +38,20 @@ try {
   console.error('❌ Google TTS initialization failed:', err);
 }
 
-app.use(cors());
+// ✅ UPDATED CORS Configuration
+const corsOptions = {
+  origin: [
+    'https://chefspeak.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:3000',
+  ],
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Health check
