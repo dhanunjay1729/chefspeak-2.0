@@ -11,7 +11,7 @@ import { RecipeStep } from "../components/RecipeStep";
 import { TimerDisplay } from "../components/TimerDisplay";
 import { NavigationControls } from "../components/NavigationControls";
 import { NutritionInfo } from "../components/NutritionInfo";
-import { IngredientsInfo } from "../components/IngredientsInfo"; // ✅ New import
+import { IngredientsInfo } from "../components/IngredientsInfo";
 import { FavoriteButton } from "../components/FavoriteButton";
 import { NonVegWarningDialog } from "../components/NonVegWarningDialog";
 import { DishAnalysisService } from "../services/dishAnalysisService";
@@ -29,19 +29,17 @@ export default function Assistant() {
   const [language, setLanguage] = useState("English");
   const [selectedDish, setSelectedDish] = useState("");
   
-  // Pre-filled form data from URL params
   const [prefilledData, setPrefilledData] = useState(null);
   
-  // Non-veg warning dialog state
   const [showNonVegWarning, setShowNonVegWarning] = useState(false);
   const [pendingFormData, setPendingFormData] = useState(null);
   const [detectedIngredients, setDetectedIngredients] = useState([]);
 
   const {
-    steps, // ✅ Only available after ingredients complete
+    steps,
     ingredients,
     hasIngredients,
-    ingredientsComplete, // ✅ NEW: Flag for when ingredients are done
+    ingredientsComplete,
     currentStepIndex,
     isLoading,
     isLoadingIngredients,
@@ -54,19 +52,18 @@ export default function Assistant() {
   } = useRecipe();
 
   const { remaining, startTimer } = useTimer();
-  const ttsService = new TTSService();
+  
+  // ✅ Create TTS instance ONCE using useRef (persists across re-renders)
+  const ttsService = useRef(new TTSService()).current;
 
   const firstStepSpokenRef = useRef(false);
   const [timerOwnerIndex, setTimerOwnerIndex] = useState(null);
+  const [stateRestored, setStateRestored] = useState(false);
 
-  const [stateRestored, setStateRestored] = useState(false); // ✅ Track restoration
-
-  // Use profile language as default
   useEffect(() => {
     setLanguage(preferredLanguage);
   }, [preferredLanguage]);
 
-  // Extract URL parameters on component mount
   useEffect(() => {
     const dishFromUrl = searchParams.get('dish');
     const peopleFromUrl = searchParams.get('people');
@@ -85,14 +82,12 @@ export default function Assistant() {
       });
       setSelectedDish(dishFromUrl);
       
-      // URL language overrides profile language
       if (languageFromUrl) {
         setLanguage(languageFromUrl);
       }
     }
   }, [searchParams]);
 
-  // ✅ MODIFIED: Only speak first cooking step after ingredients complete
   useEffect(() => {
     if (!firstStepSpokenRef.current && ingredientsComplete && steps.length > 0) {
       firstStepSpokenRef.current = true;
@@ -100,13 +95,12 @@ export default function Assistant() {
     }
   }, [steps, ingredientsComplete, language, ttsService]);
 
-  // ✅ MODIFIED: Save recipe only when ingredients complete AND steps exist
   useEffect(() => {
     const saveCompleteRecipe = async () => {
       if (
         user?.uid &&
         selectedDish &&
-        ingredientsComplete && // ✅ Check ingredients complete
+        ingredientsComplete &&
         steps.length > 0 &&
         !isLoading &&
         !isLoadingNutrition
@@ -132,7 +126,7 @@ export default function Assistant() {
   }, [
     user?.uid,
     selectedDish,
-    ingredientsComplete, // ✅ Use ingredientsComplete instead of hasIngredients
+    ingredientsComplete,
     steps,
     ingredients,
     nutritionInfo,
@@ -150,18 +144,15 @@ export default function Assistant() {
     firstStepSpokenRef.current = false;
     setTimerOwnerIndex(null);
 
-    // Update prefilled data to store current form values for recipe saving
     setPrefilledData({ dishName, servings, notes });
 
-    // Fire both, but do NOT await nutrition; steps stream to UI
     fetchNutritionInfo(dishName, servings, notes, language, userPreferences).catch(() => {});
     fetchRecipeSteps(dishName, servings, notes, language, userPreferences).catch(() => {});
   };
 
   const handleFormSubmit = async ({ dishName, servings, notes }) => {
-    sessionStorage.removeItem('chefspeak_assistant_state'); // Clear old state
+    sessionStorage.removeItem('chefspeak_assistant_state');
     
-    // Prepare user preferences for OpenAI service
     const userPreferences = {
       dietType,
       allergies,
@@ -169,16 +160,14 @@ export default function Assistant() {
       skillLevel
     };
 
-    // Check if user is vegetarian/vegan but requesting non-veg dish
     if ((dietType === 'veg' || dietType === 'vegan') && DishAnalysisService.isNonVegDish(dishName)) {
       const detected = DishAnalysisService.getDetectedNonVegIngredients(dishName);
       setDetectedIngredients(detected);
       setPendingFormData({ dishName, servings, notes });
       setShowNonVegWarning(true);
-      return; // Stop here and wait for user decision
+      return;
     }
 
-    // If no conflict, proceed normally
     await processRecipeRequest({ dishName, servings, notes }, userPreferences);
   };
 
@@ -192,7 +181,6 @@ export default function Assistant() {
         updatedAt: Date.now()
       });
       
-      // Refresh the profile hook to get updated preferences
       if (refreshProfile) {
         await refreshProfile();
       }
@@ -215,18 +203,15 @@ export default function Assistant() {
     };
 
     if (action === 'vegetarian') {
-      // Modify the dish name to request vegetarian version
       const vegDishName = `vegetarian ${pendingFormData.dishName}`;
       await processRecipeRequest({
         ...pendingFormData,
         dishName: vegDishName
       }, userPreferences);
     } else if (action === 'continue') {
-      // Update user's diet preference in database to 'nonveg'
       try {
         await updateUserDietPreference('nonveg');
         
-        // Now use the updated preference (nonveg) for this request
         const updatedPreferences = {
           ...userPreferences,
           dietType: 'nonveg'
@@ -234,11 +219,9 @@ export default function Assistant() {
         
         await processRecipeRequest(pendingFormData, updatedPreferences);
         
-        // Show success message
         console.log("Your diet preference has been updated to Non-Vegetarian");
       } catch (error) {
         console.error("Failed to update diet preference:", error);
-        // Still proceed with the recipe using overridden preference
         const overriddenPreferences = {
           ...userPreferences,
           dietType: 'nonveg'
@@ -247,38 +230,43 @@ export default function Assistant() {
       }
     }
 
-    // Close dialog and clear pending data
     setShowNonVegWarning(false);
     setPendingFormData(null);
   };
 
+  // ✅ UPDATED: Stop previous audio before speaking
   const handleSpeak = (text) => {
     ttsService.speak(text, language).catch(() => {});
   };
 
+  // ✅ UPDATED: Stop previous audio before speaking next step
   const handleNavigateNext = () => {
     const nextStep = handleNext();
-    if (nextStep) ttsService.speak(nextStep.text, language).catch(() => {});
+    if (nextStep) {
+      ttsService.speak(nextStep.text, language).catch(() => {});
+    }
   };
 
+  // ✅ UPDATED: Stop previous audio before speaking previous step
   const handleNavigateBack = () => {
     const prevStep = handleBack();
-    if (prevStep) ttsService.speak(prevStep.text, language).catch(() => {});
+    if (prevStep) {
+      ttsService.speak(prevStep.text, language).catch(() => {});
+    }
   };
 
+  // ✅ UPDATED: Stop previous audio before repeating
   const handleRepeat = () => {
     if (steps[currentStepIndex]) {
       ttsService.speak(steps[currentStepIndex].text, language).catch(() => {});
     }
   };
 
-  // Start a timer and remember which step owns it
   const handleStartTimerForStep = (index) => (seconds) => {
     setTimerOwnerIndex(index);
     startTimer(seconds);
   };
 
-  // ✅ MODIFIED: Recipe object only exists when ingredients complete
   const currentRecipe = selectedDish && ingredientsComplete && steps.length > 0 ? {
     dishName: selectedDish,
     language,
@@ -289,24 +277,19 @@ export default function Assistant() {
     nutritionInfo: nutritionInfo || null,
   } : null;
 
-  // ✅ Restore state on mount
   useEffect(() => {
-    if (stateRestored) return; // Only restore once
+    if (stateRestored) return;
 
     const savedState = sessionStorage.getItem('chefspeak_assistant_state');
     if (savedState) {
       try {
         const state = JSON.parse(savedState);
         
-        // Only restore if no URL params (URL params take priority)
         const dishFromUrl = searchParams.get('dish');
         if (!dishFromUrl && state.selectedDish) {
           setSelectedDish(state.selectedDish);
           setLanguage(state.language || preferredLanguage);
           setPrefilledData(state.prefilledData || null);
-          
-          // Note: You might want to refetch the recipe instead of restoring old steps
-          // This ensures fresh data from the API
         }
       } catch (error) {
         console.error('Failed to restore state:', error);
@@ -315,19 +298,25 @@ export default function Assistant() {
     setStateRestored(true);
   }, [stateRestored, searchParams, preferredLanguage]);
 
-  // ✅ Save state whenever relevant data changes
   useEffect(() => {
-    if (!stateRestored) return; // Don't save during initial load
+    if (!stateRestored) return;
 
     const stateToPersist = {
       selectedDish,
       language,
       prefilledData,
-      timestamp: Date.now(), // For cache invalidation
+      timestamp: Date.now(),
     };
 
     sessionStorage.setItem('chefspeak_assistant_state', JSON.stringify(stateToPersist));
   }, [selectedDish, language, prefilledData, stateRestored]);
+
+  // ✅ CLEANUP: Stop audio when component unmounts
+  useEffect(() => {
+    return () => {
+      ttsService.stop();
+    };
+  }, [ttsService]);
 
   return (
     <>
@@ -354,12 +343,10 @@ export default function Assistant() {
           </div>
         )}
 
-        {/* ✅ SEXY WAITING MESSAGE */}
         {isLoading && !ingredientsComplete && (
           <div className="w-full max-w-md mb-6">
             <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50/80 to-rose-50/80 backdrop-blur p-6 shadow-lg">
               <div className="flex flex-col items-center gap-4">
-                {/* Animated cooking icon */}
                 <div className="relative">
                   <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-rose-500 flex items-center justify-center animate-pulse">
                     <ChefHat className="w-10 h-10 text-white animate-bounce" />
@@ -367,7 +354,6 @@ export default function Assistant() {
                   <div className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-400 to-rose-500 animate-ping opacity-20" />
                 </div>
 
-                {/* Loading text */}
                 <div className="text-center space-y-2">
                   <p className="text-lg font-semibold text-zinc-900">
                     Preparing your recipe...
@@ -377,7 +363,6 @@ export default function Assistant() {
                   </p>
                 </div>
 
-                {/* Progress dots */}
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-amber-500 animate-bounce" />
                   <div className="w-2 h-2 rounded-full bg-rose-500 animate-bounce" style={{ animationDelay: '100ms' }} />
@@ -388,7 +373,6 @@ export default function Assistant() {
           </div>
         )}
 
-        {/* ✅ Show cooking steps ONLY after ingredients complete */}
         <div className="space-y-3 w-full max-w-md">
           {ingredientsComplete && steps.map((step, index) => (
             <Fragment key={index}>
@@ -429,7 +413,6 @@ export default function Assistant() {
           ))}
         </div>
 
-        {/* ✅ MODIFIED: Disable navigation until ingredients complete */}
         <NavigationControls
           onBack={handleNavigateBack}
           onRepeat={handleRepeat}
@@ -437,7 +420,6 @@ export default function Assistant() {
           hasSteps={ingredientsComplete && steps.length > 0}
         />
 
-        {/* Non-Veg Warning Dialog */}
         <NonVegWarningDialog
           isOpen={showNonVegWarning}
           onClose={() => {
