@@ -1,117 +1,103 @@
 // src/services/openaiService.js
 export class OpenAIService {
   constructor() {
-    this.baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3002';
+    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3002';
+  }
+
+  /**
+   * Fetch with simple retry (3 attempts, 3 second delay)
+   */
+  async fetchWithRetry(url, options, attempt = 1) {
+    try {
+      const response = await fetch(url, options);
+      return response;
+    } catch (error) {
+      // Retry up to 3 times
+      if (attempt < 3) {
+        console.log(`Retry attempt ${attempt + 1}/3 after 3s...`);
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        return this.fetchWithRetry(url, options, attempt + 1);
+      }
+      throw error;
+    }
   }
 
   async fetchRecipeSteps(dish, people, extraNotes, language, userPreferences = {}, opts = {}) {
-    const response = await fetch(`${this.baseUrl}/api/recipe/steps`, {
+    const url = `${this.baseURL}/api/recipe/steps`;
+    const payload = {
+      dish,
+      people,
+      extraNotes,
+      language,
+      userPreferences,
+      ...opts
+    };
+
+    const response = await this.fetchWithRetry(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        dish, 
-        people, 
-        extraNotes, 
-        language,
-        userPreferences 
-      }),
+      body: JSON.stringify(payload),
     });
-    
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
     return response;
   }
 
   async fetchNutritionInfo(dish, people, extraNotes, language, userPreferences = {}) {
-    // Changed from /api/nutrition to /api/recipe/nutrition
-    const response = await fetch(`${this.baseUrl}/api/recipe/nutrition`, {
+    const url = `${this.baseURL}/api/recipe/nutrition`;
+    const payload = {
+      dish,
+      people,
+      extraNotes,
+      language,
+      userPreferences
+    };
+
+    const response = await this.fetchWithRetry(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        dish, 
-        people, 
-        extraNotes, 
-        language,
-        userPreferences 
-      }),
-    });
-    
-    // This endpoint returns streaming data, not JSON
-    return response;
-  }
-
-  async suggestRecipesByIngredients(ingredients, opts = {}) {
-    const response = await fetch(`${this.baseUrl}/api/recipe/suggest`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        ingredients,
-        count: opts.count ?? 5,
-        cuisine: opts.cuisine || '',
-        language: opts.language || 'English',
-        userPreferences: opts.userPreferences || {},
-      }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
-      throw new Error(`Server error: ${response.statusText}`);
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const data = await response.json();
-    return data.recipes || [];
+    return response;
   }
 
-  async parseStreamingResponse(response, opts = {}) {
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let fullText = '';
+  async fetchRecipeSuggestions(preferences = {}) {
+    const url = `${this.baseURL}/api/recipe/suggest`;
+    
+    const response = await this.fetchWithRetry(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(preferences),
+    });
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value);
-      const lines = chunk.split('\n');
-
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6);
-          if (data === '[DONE]') continue;
-
-          try {
-            const parsed = JSON.parse(data);
-            const content = parsed.content || '';
-            if (content) {
-              fullText += content;
-              if (opts.onText) {
-                opts.onText(content);
-              }
-            }
-          } catch (e) {
-            // Skip invalid JSON
-          }
-        }
-      }
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    if (opts.onDone) {
-      opts.onDone(fullText);
+    return response.json();
+  }
+
+  async searchImages(query) {
+    const url = `${this.baseURL}/api/images/search?query=${encodeURIComponent(query)}`;
+    
+    const response = await this.fetchWithRetry(url, {
+      method: 'GET',
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    return fullText;
-  }
-
-  // Image search (proxied through backend)
-  async searchImage(query) {
-    const response = await fetch(`${this.baseUrl}/api/search-image?q=${encodeURIComponent(query)}`);
-    const data = await response.json();
-    return data.imageUrl;
-  }
-
-  // Google search (proxied through backend)
-  async googleSearch(query) {
-    const response = await fetch(`${this.baseUrl}/api/google-search?q=${encodeURIComponent(query)}`);
-    const data = await response.json();
-    return data.results;
+    return response.json();
   }
 }
+
+export const openAIService = new OpenAIService();

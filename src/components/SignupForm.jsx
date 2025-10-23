@@ -8,6 +8,7 @@ import { createUserWithEmailAndPassword, updateProfile, signInWithRedirect, Goog
 import { auth, db } from "../firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { Mail, Lock, User, Loader2, AlertCircle, CheckCircle } from "lucide-react";
+import { serverWakeService } from "../services/serverWakeService";
 
 export default function SignupForm() {
   const [fullName, setFullName] = useState("");
@@ -130,6 +131,9 @@ export default function SignupForm() {
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
+
+      // Wake server in background
+      serverWakeService.wakeServer();
 
       navigate("/dashboard");
     } catch (err) {

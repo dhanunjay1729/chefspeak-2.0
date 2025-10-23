@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { signInWithEmailAndPassword, signInWithPopup, signInWithRedirect, GoogleAuthProvider, getRedirectResult } from "firebase/auth";
 import { auth, googleProvider } from "../firebase";
 import { Mail, Lock, Loader2, AlertCircle } from "lucide-react";
+import { serverWakeService } from "../services/serverWakeService";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -53,6 +54,10 @@ export default function LoginForm() {
       }
 
       await signInWithEmailAndPassword(auth, email, password);
+      
+      // Wake server in background (fire and forget)
+      serverWakeService.wakeServer();
+
       navigate("/dashboard");
     } catch (err) {
       if (err.code === "auth/user-not-found") {
@@ -121,6 +126,10 @@ export default function LoginForm() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      
+      // Wake server in background (fire and forget)
+      serverWakeService.wakeServer();
+
       navigate("/dashboard");
     } catch (err) {
       setError(err.message);
@@ -253,7 +262,4 @@ export default function LoginForm() {
             Continue with Google
           </>
         )}
-      </button>
-    </div>
-  );
-}
+      </button
