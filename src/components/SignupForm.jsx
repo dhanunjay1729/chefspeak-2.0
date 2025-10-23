@@ -301,8 +301,8 @@ export default function SignupForm() {
         >
           {loading ? (
             <>
-              <Loader2 size={20} className="animate-spin" />
-              Creating Account...
+              <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+              <span>Creating account...</span>
             </>
           ) : (
             "Create Account"

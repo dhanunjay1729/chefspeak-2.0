@@ -5,10 +5,10 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth, db } from "../firebase";
-// Firestore functions for document handling(here the doc is user profile)
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import Header from "../components/Header";
 import { LogOut, Save, X, Loader2, AlertCircle, Info } from "lucide-react";
+import { FullPageLoader } from "../components/LoadingSpinner"; // ✅ Import
 
 // Updated language list to match all supported TTS languages in index.js
 const LANGS = [
@@ -153,29 +153,9 @@ export default function Profile() {
     navigate("/login");
   };
 
+  // ✅ SHOW FULL-PAGE LOADER
   if (loading) {
-    // Show loading skeleton
-    return (
-      <>
-        <Header />
-        <div className="min-h-screen bg-gradient-to-b from-white to-zinc-50">
-          <div className="mx-auto max-w-4xl px-4 py-10">
-            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-              <div className="animate-pulse space-y-4">
-                <div className="h-6 w-40 bg-zinc-200 rounded" />
-                <div className="h-40 bg-zinc-200 rounded" />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="h-12 bg-zinc-200 rounded" />
-                  <div className="h-12 bg-zinc-200 rounded" />
-                  <div className="h-12 bg-zinc-200 rounded" />
-                  <div className="h-12 bg-zinc-200 rounded" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </>
-    );
+    return <FullPageLoader text="Loading your profile..." />;
   }
 
   const currentDietOption = DIET_OPTIONS.find(d => d.value === form.diet);

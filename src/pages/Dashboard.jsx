@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import Header from "../components/Header";
 import { Heart, Salad, ChefHat, Compass, X, Loader2 } from "lucide-react";
+import { FullPageLoader } from "../components/LoadingSpinner"; // ✅ Import
 
 function ActionTile({ icon: Icon, title, desc, onClick, variant = "default" }) {
   const base =
@@ -37,7 +38,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [removing, setRemoving] = useState({}); // id -> boolean
+  const [removing, setRemoving] = useState({});
   const [showComingSoonAlert, setShowComingSoonAlert] = useState(false);
 
   useEffect(() => {
@@ -86,6 +87,11 @@ export default function Dashboard() {
     setShowComingSoonAlert(true);
     setTimeout(() => setShowComingSoonAlert(false), 3000);
   };
+
+  // ✅ SHOW FULL-PAGE LOADER
+  if (loading && currentUser) {
+    return <FullPageLoader text="Loading your dashboard..." />;
+  }
 
   if (!currentUser) {
     return (

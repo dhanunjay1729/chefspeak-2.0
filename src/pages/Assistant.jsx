@@ -20,6 +20,7 @@ import Header from "../components/Header";
 import { useSearchParams } from "react-router-dom";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase";
+import { ChefHat, Sparkles } from "lucide-react";
 
 export default function Assistant() {
   const { user } = useAuth();
@@ -353,13 +354,35 @@ export default function Assistant() {
           </div>
         )}
 
-        {/* ✅ Show waiting message while ingredients load */}
+        {/* ✅ SEXY WAITING MESSAGE */}
         {isLoading && !ingredientsComplete && (
           <div className="w-full max-w-md mb-6">
-            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 shadow-sm">
-              <div className="flex items-center gap-2 text-sm text-zinc-600">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-600" />
-                <span>Waiting for ingredients to load...</span>
+            <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50/80 to-rose-50/80 backdrop-blur p-6 shadow-lg">
+              <div className="flex flex-col items-center gap-4">
+                {/* Animated cooking icon */}
+                <div className="relative">
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-rose-500 flex items-center justify-center animate-pulse">
+                    <ChefHat className="w-10 h-10 text-white animate-bounce" />
+                  </div>
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-400 to-rose-500 animate-ping opacity-20" />
+                </div>
+
+                {/* Loading text */}
+                <div className="text-center space-y-2">
+                  <p className="text-lg font-semibold text-zinc-900">
+                    Preparing your recipe...
+                  </p>
+                  <p className="text-sm text-zinc-600">
+                    Gathering ingredients first
+                  </p>
+                </div>
+
+                {/* Progress dots */}
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-amber-500 animate-bounce" />
+                  <div className="w-2 h-2 rounded-full bg-rose-500 animate-bounce" style={{ animationDelay: '100ms' }} />
+                  <div className="w-2 h-2 rounded-full bg-fuchsia-500 animate-bounce" style={{ animationDelay: '200ms' }} />
+                </div>
               </div>
             </div>
           </div>

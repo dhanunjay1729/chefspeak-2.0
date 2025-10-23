@@ -14,6 +14,7 @@ export default function LoginForm() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   // Strict email validation
@@ -113,9 +114,24 @@ export default function LoginForm() {
     }
   };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-5">
-      <form onSubmit={handleLogin} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* Email Input */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-slate-200">Email Address</label>
@@ -183,12 +199,12 @@ export default function LoginForm() {
         <button
           type="submit"
           disabled={loading || googleLoading || !!emailError}
-          className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 disabled:from-slate-600 disabled:to-slate-600 text-white font-semibold transition-all duration-200 hover:shadow-lg hover:shadow-rose-500/30 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 flex items-center justify-center gap-2"
+          className="w-full rounded-xl bg-gradient-to-r from-fuchsia-600 to-amber-600 px-4 py-3 text-sm font-semibold text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          {loading ? (
+          {isLoading ? (
             <>
-              <Loader2 size={20} className="animate-spin" />
-              Signing In...
+              <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+              <span>Signing in...</span>
             </>
           ) : (
             "Sign In"

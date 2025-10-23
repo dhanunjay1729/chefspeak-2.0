@@ -44,6 +44,18 @@ try {
 app.use(cors());
 app.use(express.json());
 
+// Add delay middleware for testing
+const TEST_MODE = process.env.TEST_LOADING === 'true';
+const DELAY_MS = 2000; // 2 seconds
+
+app.use((req, res, next) => {
+  if (TEST_MODE) {
+    setTimeout(next, DELAY_MS);
+  } else {
+    next();
+  }
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
