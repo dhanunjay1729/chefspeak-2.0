@@ -262,4 +262,7 @@ export default function LoginForm() {
             Continue with Google
           </>
         )}
-      </button
+      </button>
+    </div>
+  );
+}
