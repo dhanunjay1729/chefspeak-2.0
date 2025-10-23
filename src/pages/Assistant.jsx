@@ -11,6 +11,7 @@ import { RecipeStep } from "../components/RecipeStep";
 import { TimerDisplay } from "../components/TimerDisplay";
 import { NavigationControls } from "../components/NavigationControls";
 import { NutritionInfo } from "../components/NutritionInfo";
+import { IngredientsInfo } from "../components/IngredientsInfo"; // ✅ New import
 import { FavoriteButton } from "../components/FavoriteButton";
 import { NonVegWarningDialog } from "../components/NonVegWarningDialog";
 import { DishAnalysisService } from "../services/dishAnalysisService";
@@ -36,9 +37,13 @@ export default function Assistant() {
   const [detectedIngredients, setDetectedIngredients] = useState([]);
 
   const {
-    steps,
+    steps, // ✅ Only available after ingredients complete
+    ingredients,
+    hasIngredients,
+    ingredientsComplete, // ✅ NEW: Flag for when ingredients are done
     currentStepIndex,
     isLoading,
+    isLoadingIngredients,
     nutritionInfo,
     isLoadingNutrition,
     fetchRecipeSteps,
@@ -52,6 +57,8 @@ export default function Assistant() {
 
   const firstStepSpokenRef = useRef(false);
   const [timerOwnerIndex, setTimerOwnerIndex] = useState(null);
+
+  const [stateRestored, setStateRestored] = useState(false); // ✅ Track restoration
 
   // Use profile language as default
   useEffect(() => {
@@ -84,21 +91,21 @@ export default function Assistant() {
     }
   }, [searchParams]);
 
-  // Speak as soon as the first step appears (don't block UI)
+  // ✅ MODIFIED: Only speak first cooking step after ingredients complete
   useEffect(() => {
-    if (!firstStepSpokenRef.current && steps.length > 0) {
+    if (!firstStepSpokenRef.current && ingredientsComplete && steps.length > 0) {
       firstStepSpokenRef.current = true;
       ttsService.speak(steps[0].text, language).catch(() => {});
     }
-  }, [steps, language, ttsService]);
+  }, [steps, ingredientsComplete, language, ttsService]);
 
-  // Add this new useEffect to save complete recipe when both steps and nutrition are loaded
+  // ✅ MODIFIED: Save recipe only when ingredients complete AND steps exist
   useEffect(() => {
     const saveCompleteRecipe = async () => {
-      // Only save if we have a user, selected dish, steps, and nutrition info is loaded (success or failure)
       if (
         user?.uid &&
         selectedDish &&
+        ingredientsComplete && // ✅ Check ingredients complete
         steps.length > 0 &&
         !isLoading &&
         !isLoadingNutrition
@@ -110,6 +117,7 @@ export default function Assistant() {
             language,
             people: prefilledData?.servings || 2,
             notes: prefilledData?.notes || '',
+            ingredients: ingredients,
             recipeSteps: steps,
             nutritionInfo: nutritionInfo || null,
           });
@@ -123,7 +131,9 @@ export default function Assistant() {
   }, [
     user?.uid,
     selectedDish,
+    ingredientsComplete, // ✅ Use ingredientsComplete instead of hasIngredients
     steps,
+    ingredients,
     nutritionInfo,
     isLoading,
     isLoadingNutrition,
@@ -148,6 +158,8 @@ export default function Assistant() {
   };
 
   const handleFormSubmit = async ({ dishName, servings, notes }) => {
+    sessionStorage.removeItem('chefspeak_assistant_state'); // Clear old state
+    
     // Prepare user preferences for OpenAI service
     const userPreferences = {
       dietType,
@@ -265,15 +277,56 @@ export default function Assistant() {
     startTimer(seconds);
   };
 
-  // Create recipe object for FavoriteButton
-  const currentRecipe = selectedDish && steps.length > 0 ? {
+  // ✅ MODIFIED: Recipe object only exists when ingredients complete
+  const currentRecipe = selectedDish && ingredientsComplete && steps.length > 0 ? {
     dishName: selectedDish,
     language,
     people: prefilledData?.servings || 2,
     notes: prefilledData?.notes || '',
+    ingredients: ingredients,
     recipeSteps: steps,
     nutritionInfo: nutritionInfo || null,
   } : null;
+
+  // ✅ Restore state on mount
+  useEffect(() => {
+    if (stateRestored) return; // Only restore once
+
+    const savedState = sessionStorage.getItem('chefspeak_assistant_state');
+    if (savedState) {
+      try {
+        const state = JSON.parse(savedState);
+        
+        // Only restore if no URL params (URL params take priority)
+        const dishFromUrl = searchParams.get('dish');
+        if (!dishFromUrl && state.selectedDish) {
+          setSelectedDish(state.selectedDish);
+          setLanguage(state.language || preferredLanguage);
+          setPrefilledData(state.prefilledData || null);
+          
+          // Note: You might want to refetch the recipe instead of restoring old steps
+          // This ensures fresh data from the API
+        }
+      } catch (error) {
+        console.error('Failed to restore state:', error);
+      }
+    }
+    setStateRestored(true);
+  }, [stateRestored, searchParams, preferredLanguage]);
+
+  // ✅ Save state whenever relevant data changes
+  useEffect(() => {
+    if (!stateRestored) return; // Don't save during initial load
+
+    const stateToPersist = {
+      selectedDish,
+      language,
+      prefilledData,
+      timestamp: Date.now(), // For cache invalidation
+    };
+
+    sessionStorage.setItem('chefspeak_assistant_state', JSON.stringify(stateToPersist));
+  }, [selectedDish, language, prefilledData, stateRestored]);
 
   return (
     <>
@@ -288,22 +341,33 @@ export default function Assistant() {
         />
 
         <NutritionInfo nutritionInfo={nutritionInfo} isLoading={isLoadingNutrition} />
-
-        {/* Show favorite button when recipe is loaded */}
+        <IngredientsInfo ingredients={ingredients} isLoading={isLoadingIngredients} />
+        
         {currentRecipe && !isLoading && !isLoadingNutrition && (
           <div className="w-full max-w-md mb-4">
             <FavoriteButton 
               recipe={currentRecipe}
               className="w-full justify-center"
-              onFavoriteChange={(favorited) => {
-                // Recipe added to favorites
-              }}
+              onFavoriteChange={(favorited) => {}}
             />
           </div>
         )}
 
+        {/* ✅ Show waiting message while ingredients load */}
+        {isLoading && !ingredientsComplete && (
+          <div className="w-full max-w-md mb-6">
+            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 shadow-sm">
+              <div className="flex items-center gap-2 text-sm text-zinc-600">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-600" />
+                <span>Waiting for ingredients to load...</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ✅ Show cooking steps ONLY after ingredients complete */}
         <div className="space-y-3 w-full max-w-md">
-          {steps.map((step, index) => (
+          {ingredientsComplete && steps.map((step, index) => (
             <Fragment key={index}>
               <RecipeStep
                 step={step}
@@ -340,21 +404,14 @@ export default function Assistant() {
               )}
             </Fragment>
           ))}
-
-          {isLoading && steps.length === 0 && (
-            <div className="animate-pulse space-y-2">
-              <div className="h-4 bg-gray-200 rounded" />
-              <div className="h-4 bg-gray-200 rounded w-5/6" />
-              <div className="h-4 bg-gray-200 rounded w-4/6" />
-            </div>
-          )}
         </div>
 
+        {/* ✅ MODIFIED: Disable navigation until ingredients complete */}
         <NavigationControls
           onBack={handleNavigateBack}
           onRepeat={handleRepeat}
           onNext={handleNavigateNext}
-          hasSteps={steps.length > 0}
+          hasSteps={ingredientsComplete && steps.length > 0}
         />
 
         {/* Non-Veg Warning Dialog */}
