@@ -5,7 +5,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 // Import Firebase Auth functions for user creation, profile update, Google sign-in, and redirect result handling
 import { createUserWithEmailAndPassword, updateProfile, signInWithRedirect, GoogleAuthProvider, getRedirectResult } from "firebase/auth";
-import { auth } from "../firebase";
+import { auth, db } from "../firebase";
+import { doc, setDoc } from "firebase/firestore";
 import { Mail, Lock, User, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 
 export default function SignupForm() {
@@ -110,7 +111,25 @@ export default function SignupForm() {
       }
 
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(userCredential.user, { displayName: fullName });
+      const user = userCredential.user;
+
+      // Update display name
+      if (fullName) {
+        await updateProfile(user, { displayName: fullName });
+      }
+
+      // Create initial user document
+      await setDoc(doc(db, "users", user.uid), {
+        displayName: fullName || "",
+        email: user.email,
+        preferredLanguage: "indian_english",
+        skill: "beginner",
+        diet: "nonveg",
+        allergies: [],
+        dislikes: [],
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
 
       navigate("/dashboard");
     } catch (err) {
