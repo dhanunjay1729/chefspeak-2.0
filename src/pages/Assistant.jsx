@@ -339,9 +339,13 @@ export default function Assistant() {
           initialData={prefilledData}
         />
 
+        {/* Nutrition Info - separate */}
         <NutritionInfo nutritionInfo={nutritionInfo} isLoading={isLoadingNutrition} />
+        
+        {/* Ingredients Info - separate */}
         <IngredientsInfo ingredients={ingredients} isLoading={isLoadingIngredients} />
         
+        {/* Favorite button */}
         {currentRecipe && !isLoading && !isLoadingNutrition && (
           <div className="w-full max-w-md mb-4">
             <FavoriteButton 
@@ -352,13 +356,70 @@ export default function Assistant() {
           </div>
         )}
 
-        {/* ✅ Use existing LoadingSpinner with custom message */}
-        {isLoading && !ingredientsComplete && (
+        {/* ✅ SEXY ANIMATION: Recipe steps loading - shows immediately when isLoading is true */}
+        {isLoading && steps.length === 0 && (
           <div className="w-full max-w-md mb-6">
-            <LoadingSpinner text=" Firing up your personal chef assistant..." />
+            <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50/80 via-rose-50/80 to-fuchsia-50/80 backdrop-blur p-8 shadow-2xl relative overflow-hidden">
+              {/* Animated background gradient orbs */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-fuchsia-400/20 to-transparent rounded-full blur-3xl animate-pulse" />
+              <div className="absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-tr from-amber-400/20 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+              
+              <div className="relative flex flex-col items-center gap-6">
+                {/* Animated cooking pot with steam */}
+                <div className="relative">
+                  {/* Main chef hat */}
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-amber-400 via-rose-500 to-fuchsia-500 flex items-center justify-center shadow-2xl shadow-rose-500/50">
+                    <ChefHat className="w-12 h-12 text-white animate-bounce" style={{ animationDuration: '1.5s' }} />
+                  </div>
+                  
+                  {/* Rotating border */}
+                  <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-amber-400 border-r-rose-500 animate-spin" style={{ animationDuration: '2s' }} />
+                  
+                  {/* Pulsing glow */}
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-400 to-fuchsia-500 animate-ping opacity-20" />
+                  
+                  {/* Steam bubbles */}
+                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 flex gap-1">
+                    <div className="w-2 h-2 rounded-full bg-amber-400/60 animate-float" style={{ animationDelay: '0s' }} />
+                    <div className="w-2 h-2 rounded-full bg-rose-400/60 animate-float" style={{ animationDelay: '0.3s' }} />
+                    <div className="w-2 h-2 rounded-full bg-fuchsia-400/60 animate-float" style={{ animationDelay: '0.6s' }} />
+                  </div>
+                </div>
+
+                {/* Animated text */}
+                <div className="text-center space-y-3">
+                  <p className="text-xl font-bold bg-gradient-to-r from-amber-600 via-rose-600 to-fuchsia-600 bg-clip-text text-transparent animate-pulse">
+                    👨‍🍳 Crafting your recipe...
+                  </p>
+                  <p className="text-sm text-zinc-600 flex items-center justify-center gap-2">
+                    <Sparkles className="w-4 h-4 animate-spin" style={{ animationDuration: '3s' }} />
+                    <span>Preparing step-by-step instructions</span>
+                    <Sparkles className="w-4 h-4 animate-spin" style={{ animationDuration: '3s', animationDelay: '1.5s' }} />
+                  </p>
+                </div>
+
+                {/* Animated cooking process dots */}
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 animate-bounce shadow-lg shadow-amber-500/50" />
+                  <div className="w-3 h-3 rounded-full bg-gradient-to-br from-rose-500 to-pink-600 animate-bounce shadow-lg shadow-rose-500/50" style={{ animationDelay: '150ms' }} />
+                  <div className="w-3 h-3 rounded-full bg-gradient-to-br from-fuchsia-500 to-purple-600 animate-bounce shadow-lg shadow-fuchsia-500/50" style={{ animationDelay: '300ms' }} />
+                </div>
+
+                {/* Progress bar with shimmer */}
+                <div className="w-full h-2 bg-zinc-200 rounded-full overflow-hidden relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-amber-500 via-rose-500 to-fuchsia-500 rounded-full animate-progress-shimmer" />
+                </div>
+
+                {/* Cooking tips */}
+                <div className="text-xs text-zinc-500 italic text-center max-w-xs animate-fade-in-out">
+                  💡 Pro tip: The secret ingredient is always love!
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
+        {/* Recipe Steps */}
         <div className="space-y-3 w-full max-w-md">
           {ingredientsComplete && steps.map((step, index) => (
             <Fragment key={index}>
@@ -370,7 +431,6 @@ export default function Assistant() {
                 onStartTimer={handleStartTimerForStep(index)}
               />
               
-              {/* ✅ ADD: Audio controls under active step */}
               {index === currentStepIndex && (
                 <div className="w-full px-2">
                   <AudioControls ttsService={ttsService} />
@@ -425,6 +485,44 @@ export default function Assistant() {
           detectedIngredients={detectedIngredients}
         />
       </div>
+
+      {/* ✅ Custom animations */}
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% { 
+            transform: translateY(0px) scale(1);
+            opacity: 0.6;
+          }
+          50% { 
+            transform: translateY(-20px) scale(0.8);
+            opacity: 0;
+          }
+        }
+
+        @keyframes progress-shimmer {
+          0% { transform: translateX(-100%); }
+          50% { transform: translateX(100%); }
+          100% { transform: translateX(-100%); }
+        }
+
+        @keyframes fade-in-out {
+          0%, 100% { opacity: 0.5; }
+          50% { opacity: 1; }
+        }
+
+        .animate-float {
+          animation: float 2s ease-in-out infinite;
+        }
+
+        .animate-progress-shimmer {
+          animation: progress-shimmer 2s ease-in-out infinite;
+          width: 50%;
+        }
+
+        .animate-fade-in-out {
+          animation: fade-in-out 3s ease-in-out infinite;
+        }
+      `}</style>
     </>
   );
 }
