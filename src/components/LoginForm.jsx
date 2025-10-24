@@ -9,7 +9,7 @@ import { auth, googleProvider } from "../firebase";
 import { Mail, Lock, Loader2, AlertCircle } from "lucide-react";
 import { serverWakeService } from "../services/serverWakeService";
 
-export default function LoginForm() {
+export default function LoginForm({ onLoadingChange }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,7 +37,7 @@ export default function LoginForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
+    onLoadingChange?.(true);
 
     try {
       if (!email || !password) {
@@ -56,17 +56,8 @@ export default function LoginForm() {
       navigate("/dashboard");
       
     } catch (err) {
-      if (err.code === "auth/user-not-found") {
-        setError("No account found with this email");
-      } else if (err.code === "auth/wrong-password") {
-        setError("Incorrect password");
-      } else if (err.code === "auth/invalid-credential") {
-        setError("Invalid email or password");
-      } else {
-        setError("Failed to sign in. Please try again.");
-      }
-    } finally {
-      setLoading(false);
+      setError(err.message || "Failed to sign in");
+      onLoadingChange?.(false);
     }
   };
 

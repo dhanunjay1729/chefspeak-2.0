@@ -22,6 +22,7 @@ import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { ChefHat, Sparkles } from "lucide-react";
 import { AudioControls } from "../components/AudioControls";
+import { LoadingSpinner } from "../components/LoadingSpinner"; // ✅ Import
 
 export default function Assistant() {
   const { user } = useAuth();
@@ -344,33 +345,10 @@ export default function Assistant() {
           </div>
         )}
 
+        {/* ✅ Use existing LoadingSpinner with custom message */}
         {isLoading && !ingredientsComplete && (
           <div className="w-full max-w-md mb-6">
-            <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50/80 to-rose-50/80 backdrop-blur p-6 shadow-lg">
-              <div className="flex flex-col items-center gap-4">
-                <div className="relative">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-rose-500 flex items-center justify-center animate-pulse">
-                    <ChefHat className="w-10 h-10 text-white animate-bounce" />
-                  </div>
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-400 to-rose-500 animate-ping opacity-20" />
-                </div>
-
-                <div className="text-center space-y-2">
-                  <p className="text-lg font-semibold text-zinc-900">
-                    Preparing your recipe...
-                  </p>
-                  <p className="text-sm text-zinc-600">
-                    Gathering ingredients first
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-amber-500 animate-bounce" />
-                  <div className="w-2 h-2 rounded-full bg-rose-500 animate-bounce" style={{ animationDelay: '100ms' }} />
-                  <div className="w-2 h-2 rounded-full bg-fuchsia-500 animate-bounce" style={{ animationDelay: '200ms' }} />
-                </div>
-              </div>
-            </div>
+            <LoadingSpinner text=" Firing up your personal chef assistant..." />
           </div>
         )}
 

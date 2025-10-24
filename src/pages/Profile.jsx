@@ -7,7 +7,7 @@ import { signOut } from "firebase/auth";
 import { auth, db } from "../firebase";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import Header from "../components/Header";
-import { LogOut, Save, X, Loader2, AlertCircle, Info } from "lucide-react";
+import { LogOut, Save, X, Loader2, AlertCircle, Info, Check } from "lucide-react"; // ✅ Add Check
 import { FullPageLoader } from "../components/LoadingSpinner"; // ✅ Import
 
 // Updated language list to match all supported TTS languages in index.js
@@ -62,6 +62,9 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [showDietChangeWarning, setShowDietChangeWarning] = useState(false);
   const [pendingDietChange, setPendingDietChange] = useState(null);
+  
+  // ✅ ADD: Toast notification state
+  const [showSaveToast, setShowSaveToast] = useState(false);
 
   const [form, setForm] = useState({
     displayName: "",
@@ -146,6 +149,10 @@ export default function Profile() {
     else await setDoc(refDoc, { ...payload, createdAt: Date.now() });
     setSaving(false);
     setInitial(form);
+    
+    // ✅ Show success toast
+    setShowSaveToast(true);
+    setTimeout(() => setShowSaveToast(false), 3000); // Hide after 3 seconds
   };
 
   const logout = async () => {
@@ -169,6 +176,57 @@ export default function Profile() {
   return (
     <>
       <Header />
+      
+      {/* ✅ Success Toast Notification */}
+      {showSaveToast && (
+        <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 duration-300">
+          <div className="relative bg-white rounded-2xl shadow-2xl border border-emerald-200 p-4 pr-12 max-w-sm">
+            {/* Gradient glow effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 via-teal-500/20 to-emerald-500/20 
+                          blur-xl rounded-2xl -z-10 animate-pulse" />
+            
+            {/* Content */}
+            <div className="flex items-start gap-3">
+              {/* Animated checkmark icon */}
+              <div className="relative flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 
+                              flex items-center justify-center shadow-lg shadow-emerald-500/50">
+                  <Check size={20} className="text-white animate-in zoom-in duration-300" strokeWidth={3} />
+                </div>
+                <div className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-20" />
+              </div>
+              
+              {/* Text */}
+              <div className="flex-1 pt-1">
+                <h4 className="text-sm font-semibold text-zinc-900 mb-0.5">
+                  Profile Updated! 🎉
+                </h4>
+                <p className="text-xs text-zinc-600">
+                  Your preferences have been saved successfully.
+                </p>
+              </div>
+              
+              {/* Close button */}
+              <button
+                onClick={() => setShowSaveToast(false)}
+                className="absolute top-2 right-2 p-1.5 rounded-lg hover:bg-zinc-100 
+                         active:bg-zinc-200 transition-colors group"
+                aria-label="Close notification"
+              >
+                <X size={14} className="text-zinc-400 group-hover:text-zinc-600" />
+              </button>
+            </div>
+            
+            {/* Progress bar */}
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-zinc-100 rounded-b-2xl overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 
+                            animate-progress origin-left rounded-b-2xl shadow-lg" 
+                   style={{ animation: 'progress 3s linear forwards' }} />
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="min-h-screen bg-gradient-to-b from-white to-zinc-50">
         <div className="mx-auto max-w-4xl px-4 py-8 md:py-10 space-y-6">
           <div className="flex items-center justify-between">
@@ -406,6 +464,14 @@ export default function Profile() {
           </div>
         </div>
       </div>
+
+      {/* ✅ Add animation keyframes */}
+      <style jsx>{`
+        @keyframes progress {
+          from { transform: scaleX(1); }
+          to { transform: scaleX(0); }
+        }
+      `}</style>
     </>
   );
 }

@@ -8,7 +8,7 @@ import { doc, setDoc, getDoc } from "firebase/firestore";
 import { Mail, Lock, User, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { serverWakeService } from "../services/serverWakeService";
 
-export default function SignupForm() {
+export default function SignupForm({ onLoadingChange }) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -68,7 +68,7 @@ export default function SignupForm() {
   const handleSignup = async (e) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
+    onLoadingChange?.(true);
 
     try {
       if (!fullName || !email || !password || !confirmPassword) {
@@ -120,17 +120,8 @@ export default function SignupForm() {
       navigate("/dashboard");
       
     } catch (err) {
-      if (err.code === "auth/email-already-in-use") {
-        setError("This email is already registered");
-      } else if (err.code === "auth/weak-password") {
-        setError("Password is too weak");
-      } else if (err.code === "auth/invalid-email") {
-        setError("Invalid email address");
-      } else {
-        setError("Failed to create account. Please try again.");
-      }
-    } finally {
-      setLoading(false);
+      setError(err.message || "Failed to create account");
+      onLoadingChange?.(false);
     }
   };
 

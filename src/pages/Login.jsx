@@ -2,9 +2,12 @@
 import { useNavigate } from "react-router-dom";
 import LoginForm from "../components/LoginForm";
 import { ChefHat, Flame } from "lucide-react";
+import { LoadingSpinner } from "../components/LoadingSpinner"; // ✅ Import
+import { useState } from "react";
 
 export default function Login() {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false); // ✅ Add state
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
@@ -121,7 +124,14 @@ export default function Login() {
               <h2 className="text-3xl font-bold text-white mb-2">Welcome Back</h2>
               <p className="text-slate-300 mb-8">Sign in to your ChefSpeak account and continue cooking amazing meals</p>
 
-              <LoginForm />
+              {/* ✅ Show spinner when loading */}
+              {isLoading ? (
+                <div className="py-8">
+                  <LoadingSpinner text=" Logging you in..." size="lg" />
+                </div>
+              ) : (
+                <LoginForm onLoadingChange={setIsLoading} />
+              )}
 
               {/* Sign up link */}
               <div className="text-center mt-8">
