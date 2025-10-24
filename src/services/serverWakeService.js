@@ -1,39 +1,47 @@
+// src/services/serverWakeService.js
 class ServerWakeService {
-  constructor() {
-    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3002';
+  constructor({ baseURL, minIntervalMs = 60 * 1000, useHead = true } = {}) {
+    this.baseURL = baseURL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:3002';
     this.lastWakeTime = 0;
+    this.minIntervalMs = minIntervalMs; // default 60s
+    this.useHead = useHead;
   }
 
-  /**
-   * Wake server once (debounced to prevent spam)
-   */
   async wakeServer() {
     const now = Date.now();
-    
-    // Don't ping more than once per minute
-    if (now - this.lastWakeTime < 60000) {
-      console.log('⏱️ Server recently woken, skipping');
+    if (now - this.lastWakeTime < this.minIntervalMs) {
+      console.log('ServerWakeService: skipped (recently woken)');
       return;
     }
-
     this.lastWakeTime = now;
-    console.log('🔥 Waking server...');
+    console.log('ServerWakeService: waking server...');
+
+    const controller = new AbortController();
+    const timeoutMs = 60000; // 60s for cold starts
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
-      // Simple health check with 20s timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 20000);
-
-      await fetch(`${this.baseURL}/health`, {
-        method: 'GET',
+      const method = this.useHead ? 'HEAD' : 'GET';
+      const res = await fetch(`${this.baseURL}/health`, {
+        method,
         signal: controller.signal,
+        // mode: 'cors' // default; ensure server CORS allows this origin
       });
 
+      if (res.ok) {
+        console.log('ServerWakeService: server awake (status)', res.status);
+      } else {
+        console.log('ServerWakeService: health check non-OK', res.status);
+      }
+    } catch (err) {
+      if (err && err.name === 'AbortError') {
+        console.log('ServerWakeService: wake attempt timed out (AbortError)');
+      } else {
+        console.log('ServerWakeService: wake attempt failed:', err && err.name ? err.name : err);
+      }
+      // silent fail otherwise
+    } finally {
       clearTimeout(timeoutId);
-      console.log('✅ Server awake');
-    } catch (error) {
-      // Silently fail - not critical
-      console.log('Server wake skipped:', error.name);
     }
   }
 }

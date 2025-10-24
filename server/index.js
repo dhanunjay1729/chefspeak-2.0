@@ -59,6 +59,11 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+//  Support HEAD requests
+app.head('/health', (req, res) => {
+  res.status(200).end();
+});
+
 // Recipe steps endpoint
 app.post('/api/recipe/steps', async (req, res) => {
   try {
