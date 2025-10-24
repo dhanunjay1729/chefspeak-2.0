@@ -153,6 +153,12 @@ export default function Profile() {
     navigate("/login");
   };
 
+  // ✅ ADD: Function to go back to previous page
+  const handleCancel = () => {
+    setForm(initial); // Reset form
+    navigate(-1); // Go back to previous page
+  };
+
   // ✅ SHOW FULL-PAGE LOADER
   if (loading) {
     return <FullPageLoader text="Loading your profile..." />;
@@ -377,7 +383,7 @@ export default function Profile() {
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-200">
                 <button
                   disabled={!dirty || saving}
-                  onClick={() => setForm(initial)}
+                  onClick={handleCancel} // ✅ Changed from inline function
                   className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 active:bg-zinc-100 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <X size={16} />

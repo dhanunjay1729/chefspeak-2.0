@@ -21,6 +21,7 @@ import { useSearchParams } from "react-router-dom";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { ChefHat, Sparkles } from "lucide-react";
+import { AudioControls } from "../components/AudioControls";
 
 export default function Assistant() {
   const { user } = useAuth();
@@ -383,6 +384,14 @@ export default function Assistant() {
                 onSpeak={handleSpeak}
                 onStartTimer={handleStartTimerForStep(index)}
               />
+              
+              {/* ✅ ADD: Audio controls under active step */}
+              {index === currentStepIndex && (
+                <div className="w-full px-2">
+                  <AudioControls ttsService={ttsService} />
+                </div>
+              )}
+              
               {timerOwnerIndex === index && remaining > 0 && (
                 <div className="pl-3">
                   <TimerDisplay remaining={remaining} />
