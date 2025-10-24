@@ -12,9 +12,7 @@ export class OpenAIService {
       const response = await fetch(url, options);
       return response;
     } catch (error) {
-      // Retry up to 3 times
       if (attempt < 3) {
-        console.log(`Retry attempt ${attempt + 1}/3 after 3s...`);
         await new Promise(resolve => setTimeout(resolve, 3000));
         return this.fetchWithRetry(url, options, attempt + 1);
       }
@@ -40,7 +38,7 @@ export class OpenAIService {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(`Recipe steps request failed: ${response.status}`);
     }
 
     return response;
@@ -53,7 +51,7 @@ export class OpenAIService {
       people,
       extraNotes,
       language,
-      userPreferences
+      userPreferences,
     };
 
     const response = await this.fetchWithRetry(url, {
@@ -63,40 +61,65 @@ export class OpenAIService {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(`Nutrition info request failed: ${response.status}`);
     }
 
     return response;
   }
 
   async fetchRecipeSuggestions(preferences = {}) {
-    const url = `${this.baseURL}/api/recipe/suggest`;
-    
+    const url = `${this.baseURL}/api/recipe/suggestions`;
+    const payload = { preferences };
+
     const response = await this.fetchWithRetry(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(preferences),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(`Recipe suggestions request failed: ${response.status}`);
     }
 
-    return response.json();
+    const data = await response.json();
+    return data.suggestions || [];
+  }
+
+  // ✅ ADD THIS METHOD: Suggest recipes based on ingredients
+  async suggestRecipesByIngredients(ingredients) {
+    const url = `${this.baseURL}/api/recipe/suggest-by-ingredients`;
+    const payload = { ingredients };
+
+    const response = await this.fetchWithRetry(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Ingredient suggestions request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.suggestions || [];
   }
 
   async searchImages(query) {
-    const url = `${this.baseURL}/api/images/search?query=${encodeURIComponent(query)}`;
-    
+    const url = `${this.baseURL}/api/images/search`;
+    const payload = { query };
+
     const response = await this.fetchWithRetry(url, {
-      method: 'GET',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(`Image search request failed: ${response.status}`);
     }
 
-    return response.json();
+    const data = await response.json();
+    return data.images || [];
   }
 }
 

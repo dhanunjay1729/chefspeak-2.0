@@ -296,6 +296,55 @@ app.get('/api/search', async (req, res) => {
   }
 });
 
+// Recipe suggestions by ingredients endpoint
+app.post('/api/recipe/suggest-by-ingredients', async (req, res) => {
+  const { ingredients } = req.body;
+
+  if (!ingredients || !Array.isArray(ingredients) || ingredients.length === 0) {
+    return res.status(400).json({ error: 'Ingredients array required' });
+  }
+
+  try {
+    const ingredientList = ingredients.join(', ');
+    
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a helpful cooking assistant. Suggest 5 dish names that can be made with the given ingredients. Return ONLY a JSON array of dish names, nothing else. Format: ["Dish 1", "Dish 2", "Dish 3", "Dish 4", "Dish 5"]'
+        },
+        {
+          role: 'user',
+          content: `Suggest 5 dishes I can make with these ingredients: ${ingredientList}`
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 200,
+    });
+
+    const content = completion.choices[0].message.content.trim();
+    
+    // Parse the JSON response
+    let suggestions = [];
+    try {
+      suggestions = JSON.parse(content);
+    } catch (parseError) {
+      // If not valid JSON, try to extract dish names from text
+      suggestions = content
+        .split('\n')
+        .map(line => line.replace(/^\d+\.\s*/, '').replace(/^-\s*/, '').replace(/["\[\]]/g, '').trim())
+        .filter(line => line.length > 0)
+        .slice(0, 5);
+    }
+
+    res.json({ suggestions });
+  } catch (error) {
+    console.error('Error generating ingredient suggestions:', error);
+    res.status(500).json({ error: 'Failed to generate suggestions' });
+  }
+});
+
 // TTS endpoint
 app.post('/api/speak', async (req, res) => {
   const { text, language } = req.body;
