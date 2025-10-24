@@ -1,9 +1,10 @@
 // src/App.jsx
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { Suspense, lazy } from "react";
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { Suspense, lazy, useEffect } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import RedirectIfAuthed from "./routes/RedirectIfAuthed";
+import { AnalyticsService } from "./services/analyticsService"; // ✅ Import
 
 const Signup = lazy(() => import("./pages/Signup"));
 const Login = lazy(() => import("./pages/Login"));
@@ -14,10 +15,27 @@ const Profile = lazy(() => import("./pages/Profile"));
 const RecipeView = lazy(() => import("./pages/RecipeView"));
 const Favorites = lazy(() => import("./pages/Favorites"));
 
+// ✅ Component to track page views
+function AnalyticsTracker() {
+  const location = useLocation();
+
+  useEffect(() => {
+    AnalyticsService.trackPageView(location.pathname + location.search);
+  }, [location]);
+
+  return null;
+}
+
 function App() {
+  // ✅ Initialize GA on mount
+  useEffect(() => {
+    AnalyticsService.initialize();
+  }, []);
+
   return (
     <Router>
       <AuthProvider>
+        <AnalyticsTracker /> {/* ✅ Track page views */}
         <Suspense fallback={<div>Loading…</div>}>
           <Routes>
             {/* Public routes (redirect if already logged in) */}

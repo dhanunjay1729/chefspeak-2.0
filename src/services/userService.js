@@ -16,6 +16,7 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { db } from "../firebase";
+import { AnalyticsService } from "./analyticsService"; // ✅ Import
 
 // Helper to reference a user's doc
 const usersRef = (uid) => doc(db, "users", uid);
@@ -132,6 +133,9 @@ export async function addFavoriteDish(
     nutritionInfo: nutritionInfo || null,
     createdAt: serverTimestamp(),
   });
+  
+  // ✅ Track the event
+  AnalyticsService.trackRecipeFavorited(dishName);
 }
 
 // Get favorite dishes (latest first)
@@ -146,8 +150,16 @@ export async function getFavoriteDishes(uid, { limit = 12 } = {}) {
 // Remove from favorites
 export async function removeFavoriteDish(uid, dishId) {
   if (!uid || !dishId) return;
+  
+  // Get dish name before deleting
   const ref = doc(db, "users", uid, "favoriteDishes", dishId);
+  const snap = await getDoc(ref);
+  const dishName = snap.exists() ? snap.data().dishName : "Unknown";
+  
   await deleteDoc(ref);
+  
+  // ✅ Track the event
+  AnalyticsService.trackRecipeUnfavorited(dishName);
 }
 
 // Check if dish is in favorites (by dish name)

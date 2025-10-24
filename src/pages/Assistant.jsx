@@ -23,6 +23,7 @@ import { db } from "../firebase";
 import { ChefHat, Sparkles } from "lucide-react";
 import { AudioControls } from "../components/AudioControls";
 import { LoadingSpinner } from "../components/LoadingSpinner"; // ✅ Import
+import { AnalyticsService } from "../services/analyticsService"; // ✅ Import
 
 export default function Assistant() {
   const { user } = useAuth();
@@ -171,6 +172,9 @@ export default function Assistant() {
     }
 
     await processRecipeRequest({ dishName, servings, notes }, userPreferences);
+
+    // ✅ Track recipe generation
+    AnalyticsService.trackRecipeGenerated(dishName, language);
   };
 
   const updateUserDietPreference = async (newDietType) => {
@@ -238,7 +242,10 @@ export default function Assistant() {
 
   // ✅ UPDATED: Stop previous audio before speaking
   const handleSpeak = (text) => {
-    ttsService.speak(text, language).catch(() => {});
+    ttsService.speak(text, language);
+    
+    // ✅ Track TTS usage
+    AnalyticsService.trackTTSUsed(language);
   };
 
   // ✅ UPDATED: Stop previous audio before speaking next step
