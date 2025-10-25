@@ -9,11 +9,14 @@ import { RecipeStep } from "../components/RecipeStep";
 import { TimerDisplay } from "../components/TimerDisplay";
 import { NavigationControls } from "../components/NavigationControls";
 import { NutritionInfo } from "../components/NutritionInfo";
+import { IngredientsInfo } from "../components/IngredientsInfo"; // ✅ Import
+import { FavoriteButton } from "../components/FavoriteButton"; // ✅ Import
 import { AudioControls } from "../components/AudioControls";
 import Header from "../components/Header"; 
 import { useParams, Navigate } from "react-router-dom";
-import { ArrowLeft, ChefHat, Sparkles } from "lucide-react"; // ✅ Add icons
+import { ArrowLeft, ChefHat, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { AnalyticsService } from "../services/analyticsService"; // ✅ Import
 
 export default function RecipeView() {
   const { user } = useAuth();
@@ -26,14 +29,20 @@ export default function RecipeView() {
   
   // Recipe state
   const [steps, setSteps] = useState([]);
+  const [ingredients, setIngredients] = useState([]); // ✅ Add ingredients state
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [nutritionInfo, setNutritionInfo] = useState(null);
 
   const { remaining, startTimer } = useTimer();
-  const ttsService = new TTSService();
+  
+  // ✅ Create TTS instance ONCE using useRef (persists across re-renders)
+  const ttsService = useRef(new TTSService()).current;
 
   const firstStepSpokenRef = useRef(false);
   const [timerOwnerIndex, setTimerOwnerIndex] = useState(null);
+
+  // ✅ Add ref to track the active step element
+  const activeStepRef = useRef(null);
 
   // Load user language
   useEffect(() => {
@@ -57,6 +66,7 @@ export default function RecipeView() {
         if (recipeData) {
           setRecipe(recipeData);
           setSteps(recipeData.recipeSteps || []);
+          setIngredients(recipeData.ingredients || []); // ✅ Load ingredients
           setNutritionInfo(recipeData.nutritionInfo || null);
           setLanguage(recipeData.language || "English");
         } else {
@@ -100,20 +110,31 @@ export default function RecipeView() {
     return null;
   };
 
+  // ✅ UPDATED: Stop previous audio before speaking
   const handleSpeak = (text) => {
-    ttsService.speak(text, language).catch(() => {});
+    ttsService.speak(text, language);
+    
+    // ✅ Track TTS usage
+    AnalyticsService.trackTTSUsed(language);
   };
 
+  // ✅ UPDATED: Stop previous audio before speaking next step
   const handleNavigateNext = () => {
     const nextStep = handleNext();
-    if (nextStep) ttsService.speak(nextStep.text, language).catch(() => {});
+    if (nextStep) {
+      ttsService.speak(nextStep.text, language).catch(() => {});
+    }
   };
 
+  // ✅ UPDATED: Stop previous audio before speaking previous step
   const handleNavigateBack = () => {
     const prevStep = handleBack();
-    if (prevStep) ttsService.speak(prevStep.text, language).catch(() => {});
+    if (prevStep) {
+      ttsService.speak(prevStep.text, language).catch(() => {});
+    }
   };
 
+  // ✅ UPDATED: Stop previous audio before repeating
   const handleRepeat = () => {
     if (steps[currentStepIndex]) {
       ttsService.speak(steps[currentStepIndex].text, language).catch(() => {});
@@ -126,7 +147,25 @@ export default function RecipeView() {
     startTimer(seconds);
   };
 
-  //  Show sexy loading animation
+  // ✅ CLEANUP: Stop audio when component unmounts
+  useEffect(() => {
+    return () => {
+      ttsService.stop();
+    };
+  }, [ttsService]);
+
+  // ✅ Auto-scroll to active step when it changes
+  useEffect(() => {
+    if (activeStepRef.current && steps.length > 0) {
+      activeStepRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center', // Centers the step in the viewport
+        inline: 'nearest'
+      });
+    }
+  }, [currentStepIndex, steps.length]);
+
+  // Show sexy loading animation
   if (loading) {
     return (
       <>
@@ -284,20 +323,37 @@ export default function RecipeView() {
           </div>
         </div>
 
-        {/* Nutrition Info */}
+        {/* ✅ Nutrition Info - separate */}
         <NutritionInfo nutritionInfo={nutritionInfo} isLoading={false} />
+        
+        {/* ✅ Ingredients Info - separate */}
+        <IngredientsInfo ingredients={ingredients} isLoading={false} />
+        
+        {/* ✅ Favorite button */}
+        {recipe && (
+          <div className="w-full max-w-md mb-4">
+            <FavoriteButton 
+              recipe={recipe}
+              className="w-full justify-center"
+              onFavoriteChange={(favorited) => {}}
+            />
+          </div>
+        )}
 
         {/* Recipe Steps */}
         <div className="space-y-3 w-full max-w-md">
           {steps.map((step, index) => (
             <Fragment key={index}>
-              <RecipeStep
-                step={step}
-                index={index}
-                isActive={index === currentStepIndex}
-                onSpeak={handleSpeak}
-                onStartTimer={handleStartTimerForStep(index)}
-              />
+              {/* ✅ Add ref to the active step */}
+              <div ref={index === currentStepIndex ? activeStepRef : null}>
+                <RecipeStep
+                  step={step}
+                  index={index}
+                  isActive={index === currentStepIndex}
+                  onSpeak={handleSpeak}
+                  onStartTimer={handleStartTimerForStep(index)}
+                />
+              </div>
               
               {index === currentStepIndex && (
                 <div className="w-full px-2">
