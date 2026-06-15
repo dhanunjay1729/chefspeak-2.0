@@ -36,7 +36,11 @@ export function FavoriteButton({
   }, [user?.uid, recipe?.dishName]);
 
   const handleToggleFavorite = async () => {
-    if (!user?.uid || !recipe || isLoading) return;
+    if (!user?.uid) {
+      alert("Please sign in to save your favorite recipes!");
+      return;
+    }
+    if (!recipe || isLoading) return;
 
     setIsLoading(true);
     try {

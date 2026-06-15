@@ -48,7 +48,7 @@ function App() {
               }
             />
             <Route
-              path="/"
+              path="/signup"
               element={
                 <RedirectIfAuthed>
                   <Signup />
@@ -56,44 +56,34 @@ function App() {
               }
             />
 
-            {/* Protected routes */}
+            {/* Public app routes */}
+            <Route
+              path="/"
+              element={<Dashboard />}
+            />
             <Route
               path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
+              element={<Dashboard />}
             />
             <Route
               path="/assistant"
-              element={
-                <ProtectedRoute>
-                  <Assistant />
-                </ProtectedRoute>
-              }
+              element={<Assistant />}
             />
             <Route
               path="/ingredients"
-              element={
-                <ProtectedRoute>
-                  <Ingredients />
-                </ProtectedRoute>
-              }
+              element={<Ingredients />}
             />
+            <Route
+              path="/recipe/:recipeId"
+              element={<RecipeView />}
+            />
+
+            {/* Protected routes */}
             <Route
               path="/profile"
               element={
                 <ProtectedRoute>
                   <Profile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/recipe/:recipeId"
-              element={
-                <ProtectedRoute>
-                  <RecipeView />
                 </ProtectedRoute>
               }
             />

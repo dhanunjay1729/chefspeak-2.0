@@ -124,17 +124,7 @@ export default function Dashboard() {
     return <FullPageLoader text="Loading your dashboard..." />;
   }
 
-  if (!currentUser) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-white to-zinc-50">
-        <Header />
-        <div className="mx-auto max-w-5xl px-4 py-16">
-          <h1 className="text-3xl font-bold text-zinc-900">Dashboard</h1>
-          <p className="text-sm text-zinc-600 mt-2">Log in to see your recent dishes.</p>
-        </div>
-      </div>
-    );
-  }
+  // Remove early return for guests so they can see the action tiles
 
   return (
     <>
@@ -221,8 +211,11 @@ export default function Dashboard() {
               </div>
             ) : items.length === 0 ? (
               <div className="text-sm text-zinc-600">
-                No recent dishes yet. Try <span className="font-medium">Explore</span> or{" "}
-                <span className="font-medium">Cook with Ingredients</span>.
+                {!currentUser ? (
+                  <>Log in to see and save your recent dishes.</>
+                ) : (
+                  <>No recent dishes yet. Try <span className="font-medium">Explore</span> or <span className="font-medium">Cook with Ingredients</span>.</>
+                )}
               </div>
             ) : (
               <>

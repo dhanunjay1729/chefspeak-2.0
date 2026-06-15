@@ -108,7 +108,7 @@ export default function Header() {
                 Sign In
               </Link>
               <Link
-                to="/"
+                to="/signup"
                 className="rounded-lg bg-gradient-to-r from-fuchsia-600 to-amber-600 px-4 py-2 text-sm font-semibold text-white shadow hover:shadow-lg transition-all"
               >
                 Get Started
@@ -167,7 +167,7 @@ export default function Header() {
                   Sign In
                 </Link>
                 <Link
-                  to="/"
+                  to="/signup"
                   onClick={() => setMenuOpen(false)}
                   className="px-4 py-3 text-center rounded-lg bg-gradient-to-r from-fuchsia-600 to-amber-600 text-white font-semibold shadow hover:shadow-lg transition-all"
                 >
