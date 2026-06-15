@@ -68,34 +68,35 @@ export default function SignupForm({ onLoadingChange }) {
   const handleSignup = async (e) => {
     e.preventDefault();
     setError("");
+
+    if (!fullName || !email || !password || !confirmPassword) {
+      setError("Please fill in all fields");
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
+      return;
+    }
+
+    if (passwordStrength < 3) {
+      setError("Password is too weak. Use uppercase, lowercase, numbers & symbols");
+      return;
+    }
+
     onLoadingChange?.(true);
 
     try {
-      if (!fullName || !email || !password || !confirmPassword) {
-        setError("Please fill in all fields");
-        return;
-      }
-
-      if (!validateEmail(email)) {
-        setError("Please enter a valid email address");
-        return;
-      }
-
-      if (password !== confirmPassword) {
-        setError("Passwords do not match");
-        return;
-      }
-
-      if (password.length < 8) {
-        setError("Password must be at least 8 characters");
-        return;
-      }
-
-      if (passwordStrength < 3) {
-        setError("Password is too weak. Use uppercase, lowercase, numbers & symbols");
-        return;
-      }
-
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
