@@ -48,6 +48,7 @@ export default function Assistant() {
     isLoadingIngredients,
     nutritionInfo,
     isLoadingNutrition,
+    error: recipeError,
     fetchRecipeSteps,
     fetchNutritionInfo,
     handleNext,
@@ -367,6 +368,14 @@ export default function Assistant() {
               className="w-full justify-center"
               onFavoriteChange={(favorited) => {}}
             />
+          </div>
+        )}
+
+        {/* Error Display */}
+        {recipeError && (
+          <div className="w-full max-w-md mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-center shadow-sm">
+            <p className="font-semibold mb-1">Oops, something went wrong</p>
+            <p className="text-sm">{recipeError}</p>
           </div>
         )}
 

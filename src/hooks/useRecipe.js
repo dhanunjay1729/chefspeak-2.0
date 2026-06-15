@@ -22,6 +22,7 @@ export function useRecipe() {
 
   const [nutritionInfo, setNutritionInfo] = useState("");
   const [isLoadingNutrition, setIsLoadingNutrition] = useState(false);
+  const [error, setError] = useState(null);
 
   const openAIService = new OpenAIService();
   const parseBufferRef = useRef("");
@@ -32,6 +33,7 @@ export function useRecipe() {
     setBufferedSteps([]);
     setIngredientsComplete(false);
     setCurrentStepIndex(0);
+    setError(null);
     parseBufferRef.current = "";
 
     try {
@@ -118,6 +120,7 @@ export function useRecipe() {
 
     } catch (err) {
       console.error("fetchRecipeSteps error:", err);
+      setError(err.message || "Failed to generate recipe. Please ensure the backend server is running.");
       throw err;
     } finally {
       setIsLoading(false);
@@ -205,9 +208,10 @@ export function useRecipe() {
     ingredientsComplete, // ✅ NEW: Check if ingredients fully loaded
     currentStepIndex,
     isLoading,
-    isLoadingIngredients: isLoading && !ingredientsComplete, // ✅ True until ingredients done
+    isLoadingIngredients: isLoading && !ingredientsComplete,
     nutritionInfo,
     isLoadingNutrition,
+    error,
     fetchRecipeSteps,
     fetchNutritionInfo,
     navigateToStep,

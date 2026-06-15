@@ -40,11 +40,21 @@ try {
 
 // ✅ UPDATED CORS Configuration
 const corsOptions = {
-  origin: [
-    'https://chefspeak.vercel.app',
-    'http://localhost:5173',
-    'http://localhost:3000',
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow localhost and any vercel.app subdomain for preview deployments
+    if (
+      origin.startsWith('http://localhost:') || 
+      origin.endsWith('.vercel.app') || 
+      origin === 'https://chefspeak.vercel.app'
+    ) {
+      return callback(null, true);
+    }
+    
+    return callback(new Error('Not allowed by CORS'));
+  },
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
