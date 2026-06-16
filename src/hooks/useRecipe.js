@@ -24,7 +24,7 @@ export function useRecipe() {
   const [isLoadingNutrition, setIsLoadingNutrition] = useState(false);
   const [error, setError] = useState(null);
 
-  const openAIService = new OpenAIService();
+  const openAIService = useRef(new OpenAIService()).current; // ✅ FIX #6: instantiate once
   const parseBufferRef = useRef("");
 
   const fetchRecipeSteps = async (dish, people, extraNotes, language, userPreferences = {}) => {

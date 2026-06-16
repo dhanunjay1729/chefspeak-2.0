@@ -292,11 +292,6 @@ export default function RecipeView() {
     );
   }
 
-  // Redirect if no user
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
   return (
     <>
       <Header />

@@ -7,8 +7,7 @@ import { WelcomeTooltip } from "./WelcomeTooltip"; // ✅ Import
 
 export default function Header() {
   const navigate = useNavigate();
-  const { logout, user } = useAuth(); // Get logout function and user from AuthContext
-  const [open, setOpen] = useState(false);
+  const { logout, user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [showWelcomeTooltip, setShowWelcomeTooltip] = useState(false); // ✅ New state
   const menuRef = useRef(null);
@@ -16,7 +15,7 @@ export default function Header() {
   useEffect(() => {
     const onClickAway = (e) => {
       if (!menuRef.current) return;
-      if (!menuRef.current.contains(e.target)) setOpen(false);
+      if (!menuRef.current.contains(e.target)) setMenuOpen(false);
     };
     document.addEventListener("mousedown", onClickAway);
     return () => document.removeEventListener("mousedown", onClickAway);
@@ -53,9 +52,9 @@ export default function Header() {
 
   const handleLogout = async () => {
     try {
-      setOpen(false);
+      setMenuOpen(false);
       await logout();
-      navigate("/login");
+      navigate("/");
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -98,6 +97,13 @@ export default function Header() {
                   {item.label}
                 </Link>
               ))}
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 text-sm font-medium text-zinc-700 hover:text-red-600 transition-colors"
+              >
+                <LogOut size={18} />
+                Logout
+              </button>
             </>
           ) : (
             <>
@@ -156,6 +162,13 @@ export default function Header() {
                     <span className="font-medium">{item.label}</span>
                   </Link>
                 ))}
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-zinc-700 hover:bg-red-50 hover:text-red-600 transition-all w-full text-left"
+                >
+                  <LogOut size={20} />
+                  <span className="font-medium">Logout</span>
+                </button>
               </>
             ) : (
               <>

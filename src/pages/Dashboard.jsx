@@ -144,7 +144,7 @@ export default function Dashboard() {
 
           <div className="flex flex-col gap-1">
             <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900">
-              Welcome, {displayName}
+              {currentUser ? `Welcome, ${displayName}` : "Welcome to ChefSpeak"}
             </h1>
             <p className="text-zinc-600">What would you like to do?</p>
           </div>

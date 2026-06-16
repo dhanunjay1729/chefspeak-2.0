@@ -63,6 +63,7 @@ export default function Assistant() {
   const firstStepSpokenRef = useRef(false);
   const [timerOwnerIndex, setTimerOwnerIndex] = useState(null);
   const [stateRestored, setStateRestored] = useState(false);
+  const recipeSavedRef = useRef(false); // ✅ FIX #5: Prevent duplicate saves
 
   // ✅ Add ref to track the active step element
   const activeStepRef = useRef(null);
@@ -102,47 +103,36 @@ export default function Assistant() {
     }
   }, [steps, ingredientsComplete, language, ttsService]);
 
+  // ✅ FIX #5: Save recipe only ONCE, after both loading states resolve
   useEffect(() => {
-    const saveCompleteRecipe = async () => {
-      if (
-        user?.uid &&
-        selectedDish &&
-        ingredientsComplete &&
-        steps.length > 0 &&
-        !isLoading &&
-        !isLoadingNutrition
-      ) {
-        try {
-          await addRecentDish(user.uid, {
-            dishName: selectedDish,
-            imageUrl: undefined,
-            language,
-            people: prefilledData?.servings || 2,
-            notes: prefilledData?.notes || '',
-            ingredients: ingredients,
-            recipeSteps: steps,
-            nutritionInfo: nutritionInfo || null,
-          });
-        } catch (error) {
-          console.error("Failed to save complete recipe:", error);
-        }
-      }
-    };
+    // Reset the saved flag when a new recipe starts loading
+    if (isLoading || isLoadingNutrition) {
+      recipeSavedRef.current = false;
+      return;
+    }
 
-    saveCompleteRecipe();
-  }, [
-    user?.uid,
-    selectedDish,
-    ingredientsComplete,
-    steps,
-    ingredients,
-    nutritionInfo,
-    isLoading,
-    isLoadingNutrition,
-    language,
-    prefilledData?.servings,
-    prefilledData?.notes
-  ]);
+    // Don't save if already saved, or if no recipe data
+    if (
+      recipeSavedRef.current ||
+      !user?.uid ||
+      !selectedDish ||
+      !ingredientsComplete ||
+      steps.length === 0
+    ) return;
+
+    recipeSavedRef.current = true;
+
+    addRecentDish(user.uid, {
+      dishName: selectedDish,
+      imageUrl: undefined,
+      language,
+      people: prefilledData?.servings || 2,
+      notes: prefilledData?.notes || '',
+      ingredients: ingredients,
+      recipeSteps: steps,
+      nutritionInfo: nutritionInfo || null,
+    }).catch(error => console.error("Failed to save complete recipe:", error));
+  }, [isLoading, isLoadingNutrition, user?.uid, selectedDish, ingredientsComplete, steps, ingredients, nutritionInfo, language, prefilledData]);
 
   const processRecipeRequest = async (formData, userPreferences) => {
     const { dishName, servings, notes } = formData;

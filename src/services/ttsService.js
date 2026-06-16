@@ -6,6 +6,7 @@ export class TTSService {
     this.onPlayStateChange = null;
     this.onProgressChange = null;
     this.playbackRate = 1.0;
+    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3002'; // ✅ FIX #12
   }
 
   /**
@@ -26,7 +27,7 @@ export class TTSService {
     this.stop();
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/speak`, {
+      const response = await fetch(`${this.baseURL}/api/speak`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, language }),
