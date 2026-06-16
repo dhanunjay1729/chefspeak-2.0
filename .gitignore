@@ -70,3 +70,8 @@ env.bak/
 *.tar
 *.gz
 *.rar
+
+# =========================
+# Local Tracking
+# =========================
+LOCAL_CHANGES.md

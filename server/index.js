@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import OpenAI from 'openai';
 import textToSpeech from '@google-cloud/text-to-speech';
+import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
@@ -69,10 +70,24 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-//  Support HEAD requests
+// Support HEAD requests
 app.head('/health', (req, res) => {
   res.status(200).end();
 });
+
+// ✅ Security: Rate Limiting
+// Limit each IP to 200 API requests per 24 hours
+// (A single recipe generation triggers steps + nutrition + optional TTS, so 200 allows ~40-50 full recipes)
+const apiLimiter = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000, // 24 hours
+  max: 200, 
+  message: { error: 'Daily recipe limit reached. Please try again tomorrow to ensure fair usage for everyone.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply rate limiter to all API routes
+app.use('/api/', apiLimiter);
 
 // Recipe steps endpoint
 app.post('/api/recipe/steps', async (req, res) => {
