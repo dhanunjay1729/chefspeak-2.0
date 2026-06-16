@@ -2,7 +2,7 @@
 // in simple words, it retrieves user information from a backend service and provides
 // default values for various profile attributes if they are not set.
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getUserProfile } from '../services/userService';
 
@@ -12,26 +12,27 @@ export function useUserProfile() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const loadProfile = async () => {
-      if (!user?.uid) {
-        setLoading(false);
-        return;
-      }
+  // ✅ FIX: loadProfile is now outside useEffect so refresh() can call it
+  const loadProfile = useCallback(async () => {
+    if (!user?.uid) {
+      setLoading(false);
+      return;
+    }
 
-      try {
-        const profileData = await getUserProfile(user.uid);
-        setProfile(profileData || {});
-      } catch (error) {
-        console.error('Failed to load user profile:', error);
-        setProfile({});
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadProfile();
+    try {
+      const profileData = await getUserProfile(user.uid);
+      setProfile(profileData || {});
+    } catch (error) {
+      console.error('Failed to load user profile:', error);
+      setProfile({});
+    } finally {
+      setLoading(false);
+    }
   }, [user?.uid]);
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
 
   // Computed values with defaults
   const displayName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || 'Chef';
@@ -53,8 +54,6 @@ export function useUserProfile() {
     allergies,
     dislikes,
     skillLevel,
-    refresh: async () => {
-      await loadProfile();
-    }
+    refresh: loadProfile, // ✅ FIX: Now correctly references the function
   };
 }

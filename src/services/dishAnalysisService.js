@@ -17,9 +17,8 @@ export class DishAnalysisService {
     'butter chicken', 'chicken tikka', 'biryani chicken', 'fish curry',
     'prawn curry', 'egg curry', 'mutton curry',
     
-    // Popular non-veg dishes
-    'biryani', 'kebab', 'tikka', 'tandoori', 'shawarma', 'burger',
-    'pizza' // could be veg or non-veg, but commonly non-veg
+    // Popular non-veg dish combos (only ones that are ALWAYS non-veg)
+    'shawarma',
   ];
 
   static isNonVegDish(dishName) {

@@ -170,3 +170,13 @@ export async function isDishFavorited(uid, dishName) {
   const snap = await getDocs(q);
   return snap.docs.some(doc => doc.data().dishName === dishName);
 }
+
+// ✅ NEW: Get the Firestore document ID of a favorited dish by its name
+export async function getFavoriteIdByDishName(uid, dishName) {
+  if (!uid || !dishName) return null;
+  const colRef = collection(db, "users", uid, "favoriteDishes");
+  const q = query(colRef);
+  const snap = await getDocs(q);
+  const match = snap.docs.find(doc => doc.data().dishName === dishName);
+  return match ? match.id : null;
+}

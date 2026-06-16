@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Heart, Loader2 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
-import { addFavoriteDish, isDishFavorited } from "../services/userService";
+import { addFavoriteDish, isDishFavorited, removeFavoriteDish, getFavoriteIdByDishName } from "../services/userService";
 
 export function FavoriteButton({ 
   recipe, 
@@ -58,9 +58,13 @@ export function FavoriteButton({
         setIsFavorited(true);
         onFavoriteChange(true);
       } else {
-        // Note: We don't remove from favorites here since we'd need the favorite's document ID
-        // This would require a more complex implementation
-        console.log("Remove from favorites functionality not implemented yet");
+        // ✅ FIX: Look up the favorite's document ID and remove it
+        const favId = await getFavoriteIdByDishName(user.uid, recipe.dishName);
+        if (favId) {
+          await removeFavoriteDish(user.uid, favId);
+          setIsFavorited(false);
+          onFavoriteChange(false);
+        }
       }
     } catch (error) {
       console.error("Failed to toggle favorite:", error);

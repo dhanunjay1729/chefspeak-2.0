@@ -89,7 +89,7 @@ export function RecipeForm({ onSubmit, isLoading, initialData }) {
 
   // Get dishes based on diet type
   const getDishList = () => {
-    const isNonVeg = dietType === "non-vegetarian";
+    const isNonVeg = dietType === "nonveg";
     return isNonVeg ? [...VEGETARIAN_DISHES, ...NON_VEG_DISHES] : VEGETARIAN_DISHES;
   };
 
