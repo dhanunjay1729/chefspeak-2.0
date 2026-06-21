@@ -15,23 +15,25 @@ const dedupeByText = (arr) => {
 
 export function useRecipe() {
   const [allSteps, setAllSteps] = useState([]);
-  const [bufferedSteps, setBufferedSteps] = useState([]); // ✅ Buffer for steps 2+
-  const [ingredientsComplete, setIngredientsComplete] = useState(false); // ✅ Track when ingredients done
+  const [bufferedSteps, setBufferedSteps] = useState([]);
+  const [ingredientsComplete, setIngredientsComplete] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [nutritionInfo, setNutritionInfo] = useState("");
+  const [nutritionInfo, setNutritionInfo] = useState(null); // ✅ FIX: null not ""
   const [isLoadingNutrition, setIsLoadingNutrition] = useState(false);
   const [error, setError] = useState(null);
 
-  const openAIService = useRef(new OpenAIService()).current; // ✅ FIX #6: instantiate once
+  const openAIService = useRef(new OpenAIService()).current;
   const parseBufferRef = useRef("");
+  const ingredientsCompleteRef = useRef(false); // ✅ FIX: ref mirror for use inside setState updaters
 
   const fetchRecipeSteps = async (dish, people, extraNotes, language, userPreferences = {}) => {
     setIsLoading(true);
     setAllSteps([]);
     setBufferedSteps([]);
     setIngredientsComplete(false);
+    ingredientsCompleteRef.current = false; // ✅ reset ref too
     setCurrentStepIndex(0);
     setError(null);
     parseBufferRef.current = "";
@@ -73,20 +75,17 @@ export function useRecipe() {
                 parseBufferRef.current = remaining;
 
                 if (extracted.length > 0) {
-                  // ✅ Add to allSteps for tracking
                   setAllSteps((prev) => {
                     const updated = dedupeByText([...prev, ...extracted]);
                     
-                    // ✅ If we now have ingredients (step 1), mark as complete
-                    if (updated.length >= 1 && !ingredientsComplete) {
+                    // ✅ FIX: Use the ref (not stale closure) to check
+                    if (updated.length >= 1 && !ingredientsCompleteRef.current) {
+                      ingredientsCompleteRef.current = true;
                       setIngredientsComplete(true);
-                      
-                      // ✅ Release buffered steps (steps 2+)
-                      if (updated.length > 1) {
-                        setBufferedSteps(updated.slice(1));
-                      }
-                    } else if (ingredientsComplete && updated.length > 1) {
-                      // ✅ If ingredients already loaded, update cooking steps directly
+                    }
+                    
+                    // ✅ Always update buffered steps when we have >1 step
+                    if (updated.length > 1) {
                       setBufferedSteps(updated.slice(1));
                     }
                     
@@ -107,7 +106,8 @@ export function useRecipe() {
         setAllSteps((prev) => {
           const updated = dedupeByText([...prev, ...finalSteps]);
           
-          if (updated.length >= 1) {
+          if (updated.length >= 1 && !ingredientsCompleteRef.current) {
+            ingredientsCompleteRef.current = true;
             setIngredientsComplete(true);
           }
           if (updated.length > 1) {
@@ -129,7 +129,7 @@ export function useRecipe() {
 
   const fetchNutritionInfo = async (dish, people, extraNotes, language, userPreferences = {}) => {
     setIsLoadingNutrition(true);
-    setNutritionInfo("");
+    setNutritionInfo(null); // ✅ FIX: null not ""
 
     try {
       const response = await openAIService.fetchNutritionInfo(
@@ -141,20 +141,28 @@ export function useRecipe() {
       );
 
       const data = await response.json();
-      setNutritionInfo(data);
+      
+      // ✅ FIX: Validate that we got actual nutrition data back
+      if (data && typeof data === 'object' && !data.error) {
+        setNutritionInfo(data);
+      } else {
+        console.error("Invalid nutrition response:", data);
+        setNutritionInfo(null);
+      }
 
     } catch (err) {
       console.error("fetchNutritionInfo error:", err);
+      setNutritionInfo(null);
     } finally {
       setIsLoadingNutrition(false);
     }
   };
 
-  // ✅ Extract ingredients (first step)
+  // Extract ingredients (first step)
   const ingredients = allSteps.length > 0 ? allSteps[0].text : "";
   const hasIngredients = ingredients.trim().length > 0;
   
-  // ✅ Return buffered cooking steps (only shown after ingredients complete)
+  // Return buffered cooking steps (only shown after ingredients complete)
   const steps = ingredientsComplete ? bufferedSteps : [];
 
   const navigateToStep = (index) => {
@@ -176,10 +184,10 @@ export function useRecipe() {
   };
 
   return {
-    steps, // ✅ Only cooking steps, only after ingredients complete
-    ingredients, // ✅ First step text
-    hasIngredients, // ✅ Check if ingredients text exists
-    ingredientsComplete, // ✅ NEW: Check if ingredients fully loaded
+    steps,
+    ingredients,
+    hasIngredients,
+    ingredientsComplete,
     currentStepIndex,
     isLoading,
     isLoadingIngredients: isLoading && !ingredientsComplete,
@@ -193,3 +201,4 @@ export function useRecipe() {
     handleBack,
   };
 }
+
