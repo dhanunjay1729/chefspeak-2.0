@@ -184,34 +184,23 @@ app.post('/api/recipe/nutrition', async (req, res) => {
       prompt += ` Additional notes: ${extraNotes}.`;
     }
 
-    prompt += ` Include approximate values for calories, protein, fat, and carbohydrates. Respond only in ${language}. No bold letters, just a clear list.`;
+    prompt += ` Include approximate numerical values (in grams/kcal) for calories, protein, fat, and carbohydrates. Respond ONLY with a valid JSON object using the following exact keys: "calories", "protein", "fat", "carbs". The values should be numbers only, no strings or units.`;
 
-    const stream = await openai.chat.completions.create({
+    const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       temperature: 0.2,
-      stream: true,
+      response_format: { type: "json_object" },
       messages: [
         {
           role: "system",
-          content: `You are a multilingual professional chef assistant. Return nutrition facts in ${language}.`
+          content: `You are a multilingual professional chef assistant. Return nutrition facts strictly as a JSON object.`
         },
         { role: "user", content: prompt },
       ],
     });
 
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-
-    for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content || '';
-      if (content) {
-        res.write(`data: ${JSON.stringify({ content })}\n\n`);
-      }
-    }
-
-    res.write('data: [DONE]\n\n');
-    res.end();
+    const data = JSON.parse(completion.choices[0].message.content);
+    res.json(data);
 
   } catch (error) {
     console.error('Nutrition info error:', error);
