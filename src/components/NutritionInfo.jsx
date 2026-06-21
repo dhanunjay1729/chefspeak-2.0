@@ -65,7 +65,10 @@ function MacroCard({ icon, label, value, unit, color }) {
   return (
     <div className={`flex flex-col items-center justify-center p-3 rounded-xl border ${color}`}>
       <div className="mb-1">{icon}</div>
-      <span className="text-2xl font-black tracking-tight">{value !== undefined ? value : '-'}</span>
+      <div className="flex items-baseline gap-1">
+        <span className="text-2xl font-black tracking-tight">{value !== undefined ? value : '-'}</span>
+        <span className="text-xs font-semibold opacity-60">{unit}</span>
+      </div>
       <span className="text-[10px] font-bold uppercase tracking-wider opacity-80 mt-1">{label}</span>
     </div>
   );
