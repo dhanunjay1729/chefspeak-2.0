@@ -133,7 +133,7 @@ app.post('/api/recipe/steps', async (req, res) => {
     prompt += ` Respond only in ${language}. No bold letters or special characters. Use one numbered step per line.`;
 
     const stream = await ai.models.generateContentStream({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         systemInstruction: `You are a multilingual professional chef assistant. Output only cooking steps, numbered, in ${language}. Always respect dietary restrictions and allergies.`,
@@ -183,7 +183,7 @@ app.post('/api/recipe/nutrition', async (req, res) => {
     prompt += ` Include approximate numerical values (in grams/kcal) for calories, protein, fat, and carbohydrates. Respond ONLY with a valid JSON object using the following exact keys: "calories", "protein", "fat", "carbs". The values should be numbers only, no strings or units.`;
 
     const completion = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         systemInstruction: `You are a multilingual professional chef assistant. Return nutrition facts strictly as a JSON object.`,
@@ -240,7 +240,7 @@ app.post('/api/recipe/suggest', async (req, res) => {
     ].join(" ");
 
     const completion = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash",
       contents: user,
       config: {
         systemInstruction: sys.join(" "),
@@ -315,7 +315,7 @@ app.post('/api/recipe/suggest-by-ingredients', async (req, res) => {
     const ingredientList = ingredients.join(', ');
     
     const completion = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash",
       contents: `Suggest 5 dishes I can make with these ingredients: ${ingredientList}`,
       config: {
         systemInstruction: 'You are a helpful cooking assistant. Suggest 5 dish names that can be made with the given ingredients. Return ONLY a JSON array of dish names, nothing else. Format: ["Dish 1", "Dish 2", "Dish 3", "Dish 4", "Dish 5"]',
