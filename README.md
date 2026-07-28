@@ -36,7 +36,7 @@ Try it out: **[chefspeak.vercel.app](https://chefspeak.vercel.app)**
 
 ### Backend
 - **Node.js + Express** - RESTful API server
-- **OpenAI GPT-4** - Recipe generation & analysis
+- **Gemini 2.5 Flash** - Recipe generation & analysis
 - **Google Cloud TTS** - Multilingual text-to-speech
 - **Unsplash API** - Dish imagery
 
@@ -49,7 +49,7 @@ Try it out: **[chefspeak.vercel.app](https://chefspeak.vercel.app)**
 ### Prerequisites
 - Node.js 18+ and npm
 - Firebase account
-- OpenAI API key
+- Gemini API key
 - Google Cloud TTS service account
 - Unsplash API key (optional)
 
@@ -92,8 +92,8 @@ VITE_API_BASE_URL=http://localhost:3002
 
 **Backend (`server/.env`):**
 ```bash
-# OpenAI API Key
-OPENAI_API_KEY=sk-proj-your_openai_key
+# Gemini API Key
+GEMINI_API_KEY=your_gemini_key
 
 # Google TTS Credentials (single-line JSON for production)
 GOOGLE_TTS_CREDENTIALS={"type":"service_account",...}
@@ -144,7 +144,7 @@ vercel --prod
 4. Set **Build Command** to `npm install`
 5. Set **Start Command** to `npm start`
 6. Add environment variables:
-   - `OPENAI_API_KEY`
+   - `GEMINI_API_KEY`
    - `GOOGLE_TTS_CREDENTIALS` (single-line JSON)
    - `PORT=3002`
 
@@ -243,7 +243,7 @@ See the [LICENSE](LICENSE) file for full details.
 
 ## 🙏 Acknowledgments
 
-- **OpenAI** for GPT-4 API
+- **Google** for Gemini API
 - **Google Cloud** for Text-to-Speech
 - **Firebase** for authentication & database
 - **Vercel** & **Render** for hosting

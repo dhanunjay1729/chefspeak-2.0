@@ -1,6 +1,6 @@
 // src/hooks/useRecipe.js
 import { useState, useRef } from "react";
-import { OpenAIService } from "../services/openaiService";
+import { GeminiService } from "../services/geminiService";
 import { RecipeParser } from "../utils/recipeParser";
 
 const dedupeByText = (arr) => {
@@ -24,7 +24,7 @@ export function useRecipe() {
   const [isLoadingNutrition, setIsLoadingNutrition] = useState(false);
   const [error, setError] = useState(null);
 
-  const openAIService = useRef(new OpenAIService()).current;
+  const geminiService = useRef(new GeminiService()).current;
   const parseBufferRef = useRef("");
   const ingredientsCompleteRef = useRef(false); // ✅ FIX: ref mirror for use inside setState updaters
 
@@ -39,7 +39,7 @@ export function useRecipe() {
     parseBufferRef.current = "";
 
     try {
-      const response = await openAIService.fetchRecipeSteps(
+      const response = await geminiService.fetchRecipeSteps(
         dish,
         people,
         extraNotes,
@@ -132,7 +132,7 @@ export function useRecipe() {
     setNutritionInfo(null); // ✅ FIX: null not ""
 
     try {
-      const response = await openAIService.fetchNutritionInfo(
+      const response = await geminiService.fetchNutritionInfo(
         dish,
         people,
         extraNotes,

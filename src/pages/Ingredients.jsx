@@ -14,7 +14,7 @@ import {
   Wand2,
   Loader2,
 } from "lucide-react";
-import { OpenAIService } from "../services/openaiService";
+import { GeminiService } from "../services/geminiService";
 
 const QUICK = [
   "onion",
@@ -99,7 +99,7 @@ export default function IngredientsPage() {
     if (ingredients.length === 0) return;
     setLoading(true);
     try {
-      const svc = new OpenAIService();
+      const svc = new GeminiService();
       const resp = await svc.suggestRecipesByIngredients(ingredients);
       const list = (Array.isArray(resp) ? resp : [])
         .slice(0, 5)

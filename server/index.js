@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import OpenAI from 'openai';
+import { GoogleGenAI } from '@google/genai';
 import textToSpeech from '@google-cloud/text-to-speech';
 import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
@@ -16,9 +16,9 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3002;
 
-// Initialize OpenAI with server-side key
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+// Initialize Gemini with server-side key
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
 });
 
 // Initialize Google TTS
@@ -132,17 +132,13 @@ app.post('/api/recipe/steps', async (req, res) => {
 
     prompt += ` Respond only in ${language}. No bold letters or special characters. Use one numbered step per line.`;
 
-    const stream = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      temperature: 0.5,
-      stream: true,
-      messages: [
-        {
-          role: "system",
-          content: `You are a multilingual professional chef assistant. Output only cooking steps, numbered, in ${language}. Always respect dietary restrictions and allergies.`
-        },
-        { role: "user", content: prompt },
-      ],
+    const stream = await ai.models.generateContentStream({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        systemInstruction: `You are a multilingual professional chef assistant. Output only cooking steps, numbered, in ${language}. Always respect dietary restrictions and allergies.`,
+        temperature: 0.5,
+      }
     });
 
     // res here is sent by express to the client
@@ -152,9 +148,9 @@ app.post('/api/recipe/steps', async (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    // for each chunk of data received from openai, extract the content and send it as a new event to the client
+    // for each chunk of data received from gemini, extract the content and send it as a new event to the client
     for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content || '';
+      const content = chunk.text || '';
       if (content) {
         res.write(`data: ${JSON.stringify({ content })}\n\n`);
       }
@@ -186,20 +182,17 @@ app.post('/api/recipe/nutrition', async (req, res) => {
 
     prompt += ` Include approximate numerical values (in grams/kcal) for calories, protein, fat, and carbohydrates. Respond ONLY with a valid JSON object using the following exact keys: "calories", "protein", "fat", "carbs". The values should be numbers only, no strings or units.`;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content: `You are a multilingual professional chef assistant. Return nutrition facts strictly as a JSON object.`
-        },
-        { role: "user", content: prompt },
-      ],
+    const completion = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        systemInstruction: `You are a multilingual professional chef assistant. Return nutrition facts strictly as a JSON object.`,
+        temperature: 0.2,
+        responseMimeType: "application/json",
+      }
     });
 
-    const data = JSON.parse(completion.choices[0].message.content);
+    const data = JSON.parse(completion.text);
     res.json(data);
 
   } catch (error) {
@@ -246,17 +239,17 @@ app.post('/api/recipe/suggest', async (req, res) => {
       `Return exactly ${recipeCount} distinct dish names.`,
     ].join(" ");
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      temperature: 0.4,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: sys.join(" ") },
-        { role: "user", content: user },
-      ],
+    const completion = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: user,
+      config: {
+        systemInstruction: sys.join(" "),
+        temperature: 0.4,
+        responseMimeType: "application/json",
+      }
     });
 
-    const parsed = JSON.parse(completion.choices[0]?.message?.content || "{}");
+    const parsed = JSON.parse(completion.text || "{}");
     let recipes = parsed.recipes || [];
 
     while (recipes.length < recipeCount) {
@@ -321,23 +314,18 @@ app.post('/api/recipe/suggest-by-ingredients', async (req, res) => {
   try {
     const ingredientList = ingredients.join(', ');
     
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a helpful cooking assistant. Suggest 5 dish names that can be made with the given ingredients. Return ONLY a JSON array of dish names, nothing else. Format: ["Dish 1", "Dish 2", "Dish 3", "Dish 4", "Dish 5"]'
-        },
-        {
-          role: 'user',
-          content: `Suggest 5 dishes I can make with these ingredients: ${ingredientList}`
-        }
-      ],
-      temperature: 0.7,
-      max_tokens: 200,
+    const completion = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: `Suggest 5 dishes I can make with these ingredients: ${ingredientList}`,
+      config: {
+        systemInstruction: 'You are a helpful cooking assistant. Suggest 5 dish names that can be made with the given ingredients. Return ONLY a JSON array of dish names, nothing else. Format: ["Dish 1", "Dish 2", "Dish 3", "Dish 4", "Dish 5"]',
+        temperature: 0.7,
+        maxOutputTokens: 200,
+        responseMimeType: "application/json",
+      }
     });
 
-    const content = completion.choices[0].message.content.trim();
+    const content = completion.text.trim();
     
     // Parse the JSON response
     let suggestions = [];

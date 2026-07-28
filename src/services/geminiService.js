@@ -1,5 +1,5 @@
-// src/services/openaiService.js
-export class OpenAIService {
+// src/services/geminiService.js
+export class GeminiService {
   constructor() {
     this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3002';
   }
@@ -123,4 +123,4 @@ export class OpenAIService {
   }
 }
 
-export const openAIService = new OpenAIService();
+export const geminiService = new GeminiService();
