@@ -2,12 +2,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useUserProfile } from "../hooks/useUserProfile";
-import { getRecentDishes, deleteRecentDish } from "../services/userService";
+import { getRecentDishes, deleteRecentDish, getFavoriteDishes } from "../services/userService";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import Header from "../components/Header";
-import { Heart, Salad, ChefHat, Compass, X, Loader2 } from "lucide-react";
-import { FullPageLoader } from "../components/LoadingSpinner"; // ✅ Import
+import { Heart, Salad, ChefHat, Compass, X, Loader2, Sparkles } from "lucide-react";
+import { FullPageLoader } from "../components/LoadingSpinner";
+import { geminiService } from "../services/geminiService";
 
 function ActionTile({ icon: Icon, title, desc, onClick, variant = "default" }) {
   const base =
@@ -34,12 +35,14 @@ function ActionTile({ icon: Icon, title, desc, onClick, variant = "default" }) {
 export default function Dashboard() {
   const authCtx = useAuth();
   const currentUser = authCtx.currentUser ?? authCtx.user ?? null;
-  const { displayName } = useUserProfile();
+  const { displayName, dietType, allergies, dislikes } = useUserProfile();
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState({});
   const [showComingSoonAlert, setShowComingSoonAlert] = useState(false);
+  const [recommendations, setRecommendations] = useState([]);
+  const [loadingRecs, setLoadingRecs] = useState(false);
   
   // ✅ PAGINATION STATE
   const [currentPage, setCurrentPage] = useState(1);
@@ -55,8 +58,23 @@ export default function Dashboard() {
       try {
         const data = await getRecentDishes(currentUser.uid, { limit: 20 });
         if (mounted) setItems(data);
-      } catch {} finally {
-        if (mounted) setLoading(false);
+
+        // Fetch favorites for recommendations
+        if (mounted) setLoadingRecs(true);
+        const favs = await getFavoriteDishes(currentUser.uid, { limit: 10 });
+        if (favs.length > 0 && mounted) {
+          const favNames = favs.map(f => f.dishName);
+          const prefs = { dietType, allergies, dislikes };
+          const recs = await geminiService.fetchPersonalizedRecommendations(favNames, prefs, "English");
+          if (mounted) setRecommendations(recs);
+        }
+      } catch (err) {
+        console.error("Dashboard fetch error:", err);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+          setLoadingRecs(false);
+        }
       }
     })();
     return () => {
@@ -177,12 +195,39 @@ export default function Dashboard() {
             />
           </div>
 
-          <section className="space-y-3">
-            <h2 className="text-lg font-semibold text-zinc-900">Personalized suggestions</h2>
-            <div className="rounded-2xl border border-zinc-200 bg-white/90 backdrop-blur p-4 text-sm text-zinc-600">
-              Coming soon — tailored picks based on your cooking history.
-            </div>
-          </section>
+          {currentUser && (
+            <section className="space-y-3">
+              <h2 className="text-lg font-semibold text-zinc-900 flex items-center gap-2">
+                <Sparkles size={18} className="text-amber-500" />
+                Recommended for You
+              </h2>
+              
+              {loadingRecs ? (
+                <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="min-w-[200px] h-24 rounded-xl border border-zinc-200 bg-white animate-pulse" />
+                  ))}
+                </div>
+              ) : recommendations.length > 0 ? (
+                <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x">
+                  {recommendations.map((rec, i) => (
+                    <button
+                      key={i}
+                      onClick={() => navigate(`/assistant?dish=${encodeURIComponent(rec)}`)}
+                      className="snap-start min-w-[200px] sm:min-w-[240px] text-left p-4 rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 hover:shadow-md hover:-translate-y-0.5 transition"
+                    >
+                      <div className="font-semibold text-amber-900 mb-1">{rec}</div>
+                      <div className="text-xs text-amber-700">Click to start cooking 👨‍🍳</div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-600">
+                  Favorite a few dishes to start getting AI-powered personalized recommendations!
+                </div>
+              )}
+            </section>
+          )}
 
           {/* ✅ UPDATED RECENT DISHES SECTION */}
           <section id="recent-dishes-section" className="space-y-3">

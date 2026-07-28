@@ -104,6 +104,25 @@ export class GeminiService {
     return data.suggestions || [];
   }
 
+  // ✅ ADD THIS METHOD: Personalized recommendations based on favorites
+  async fetchPersonalizedRecommendations(favoriteDishes, userPreferences = {}, language = "English") {
+    const url = `${this.baseURL}/api/recipe/recommend`;
+    const payload = { favoriteDishes, userPreferences, language };
+
+    const response = await this.fetchWithRetry(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Personalized recommendation request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.recommendations || [];
+  }
+
   async searchImages(query) {
     const url = `${this.baseURL}/api/images/search`;
     const payload = { query };

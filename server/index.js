@@ -408,6 +408,57 @@ app.post('/api/speak', async (req, res) => {
   }
 });
 
+// Personalized recommendations endpoint based on favorites
+app.post('/api/recipe/recommend', async (req, res) => {
+  try {
+    const { favoriteDishes, userPreferences, language = "English" } = req.body;
+
+    if (!favoriteDishes || !Array.isArray(favoriteDishes) || favoriteDishes.length === 0) {
+      return res.status(400).json({ error: 'Favorite dishes array required' });
+    }
+
+    let prompt = `The user loves eating these dishes: ${favoriteDishes.join(', ')}. 
+Based on these flavor profiles and cuisines, recommend 4 new dishes they would absolutely love. 
+Make sure the recommendations are distinct but share similar culinary appeal (e.g. similar spice levels, regions, or comfort-food vibes).`;
+
+    if (userPreferences?.dietType) {
+      const dietInstructions = {
+        'veg': 'Only suggest completely vegetarian dishes (no meat, fish, or eggs).',
+        'vegan': 'Only suggest vegan dishes (no animal products whatsoever).',
+        'nonveg': 'You may suggest both vegetarian and non-vegetarian dishes.'
+      };
+      prompt += ` ${dietInstructions[userPreferences.dietType]}`;
+    }
+
+    if (userPreferences?.allergies?.length > 0) {
+      prompt += ` NEVER suggest dishes containing these allergens: ${userPreferences.allergies.join(', ')}.`;
+    }
+
+    if (userPreferences?.dislikes?.length > 0) {
+      prompt += ` Avoid using these ingredients: ${userPreferences.dislikes.join(', ')}.`;
+    }
+
+    prompt += ` Respond ONLY with a valid JSON array of 4 dish names strings in ${language}. Example format: ["Dish 1", "Dish 2", "Dish 3", "Dish 4"]`;
+
+    const completion = await ai.models.generateContent({
+      model: "gemini-3.5-flash-lite",
+      contents: prompt,
+      config: {
+        systemInstruction: `You are a culinary recommendation engine. Output strictly JSON array of strings.`,
+        temperature: 0.7,
+        responseMimeType: "application/json",
+      }
+    });
+
+    const recommendations = JSON.parse(completion.text || "[]");
+    res.json({ recommendations });
+
+  } catch (error) {
+    console.error('Personalized recommendation error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
