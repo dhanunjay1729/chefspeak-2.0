@@ -1,83 +1,149 @@
-# 🍳 ChefSpeak - Your AI-Powered Cooking Assistant
+# 🍳 ChefSpeak — AI-Powered Cooking Assistant
 
-> Transform your cooking experience with voice-guided recipes, smart timers, and personalized dietary preferences.
+> Your personal kitchen companion: voice-guided recipes, real-time nutritional analysis, and AI-powered dish recommendations — all in one beautiful app.
 
-[![Live Demo](https://img.shields.io/badge/Live-Demo-green?style=for-the-badge)](https://chefspeak.vercel.app)
+[![Live Demo](https://img.shields.io/badge/🚀_Live-Demo-22c55e?style=for-the-badge)](https://chefspeak.vercel.app)
 [![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg?style=for-the-badge)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+[![Backend Status](https://img.shields.io/badge/API-Always_Awake-blue?style=for-the-badge)](https://chefspeak-api.onrender.com/health)
+
+---
 
 ## 📖 Overview
 
-ChefSpeak is an intelligent cooking assistant that provides **real-time voice-guided recipes** in multiple languages. Whether you're a beginner or a professional chef, ChefSpeak adapts to your skill level, dietary preferences, and available ingredients to deliver personalized cooking guidance.
+ChefSpeak turns cooking from a chore into a guided experience. It generates step-by-step recipes on-demand using **Google Gemini**, reads them aloud in **18 languages** via Google Cloud TTS, and learns your taste over time to recommend dishes you'll love.
 
-### ✨ Key Features
+Whether you're a college student cooking for the first time or an experienced home chef, ChefSpeak adapts to your skill level, dietary restrictions, allergies, and available ingredients.
 
-- 🎙️ **Voice-Guided Cooking** - Hands-free step-by-step instructions with text-to-speech
-- 🌍 **Multilingual Support** - Cook in English, Hindi, Telugu, or Tamil
-- ⏱️ **Smart Timers** - Automatic timer detection and countdown for each cooking step
-- 🥗 **Dietary Preferences** - Vegetarian, Vegan, and Non-Vegetarian options with allergy tracking
-- 🔍 **Ingredient-Based Suggestions** - Get recipe ideas based on what's in your kitchen
-- ❤️ **Favorites & History** - Save and revisit your favorite recipes
-- 📊 **Nutritional Information** - Get detailed nutrition facts for every dish
-- 🎨 **Beautiful UI** - Modern, responsive design with smooth animations
-- 🔐 **Secure Authentication** - Firebase-powered Google Sign-In and email authentication
+---
 
-## 🚀 Live Demo
+## ✨ Features
 
-Try it out: **[chefspeak.vercel.app](https://chefspeak.vercel.app)**
+| Feature | Description |
+|---|---|
+| 🎙️ **Voice-Guided Cooking** | Hands-free step-by-step instructions with Google Cloud Text-to-Speech in 18 languages |
+| 🤖 **AI Recipe Generation** | Powered by Gemini 3.5 Flash Lite — generates personalized recipes with streaming SSE output |
+| 🧠 **Personalized Recommendations** | LLM-as-a-Recommender engine analyzes your favorites to suggest new dishes you'll love |
+| ⏱️ **Smart Timers** | Automatically detects cooking durations ("simmer for 10 minutes") and starts countdown timers |
+| 🥗 **Dietary Intelligence** | Vegetarian, Vegan, and Non-Veg modes with allergy tracking and ingredient dislikes |
+| 🧑‍🍳 **Skill-Level Adaptation** | Adjusts recipe complexity for Beginner, Intermediate, and Pro cooks |
+| 🔍 **Cook by Ingredients** | Enter what's in your fridge → get AI-suggested dishes you can actually make right now |
+| 📊 **Nutritional Analysis** | Structured JSON nutrition breakdown (calories, protein, fat, carbs) for every dish |
+| ❤️ **Favorites & History** | Save dishes, revisit past recipes, and build a flavor profile over time |
+| 🔐 **Authentication** | Firebase Auth with Google Sign-In and email/password, plus a sign-in-required modal for protected actions |
+| 🌍 **18 Languages** | English (US/UK/Indian), Hindi, Telugu, Tamil, Kannada, Malayalam, Marathi, Gujarati, Bengali, Punjabi, Spanish, French, German, Italian, Japanese, Chinese, Russian |
+| 📱 **Responsive Design** | Beautiful, modern UI with Tailwind CSS v4 and Framer Motion animations |
+
+---
+
+## 🏗️ Architecture
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                        FRONTEND (Vercel)                             │
+│                                                                      │
+│  React 19 + Vite + Tailwind CSS v4 + Framer Motion                  │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐           │
+│  │Dashboard │ │Assistant │ │Favorites │ │  Ingredients  │           │
+│  │  + Recs  │ │ + Voice  │ │          │ │  Suggestions  │           │
+│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └──────┬───────┘           │
+│       │             │            │               │                   │
+│       └─────────────┴────────────┴───────────────┘                   │
+│                          │                                           │
+│              GeminiService (API Client)                              │
+│              Firebase SDK (Auth + Firestore)                         │
+└──────────────────────────┬───────────────────────────────────────────┘
+                           │ HTTPS
+┌──────────────────────────┴───────────────────────────────────────────┐
+│                        BACKEND (Render)                              │
+│                                                                      │
+│  Node.js + Express 5 (ESM)                                          │
+│  ┌─────────────────┐  ┌──────────────────┐  ┌──────────────────┐   │
+│  │ /api/recipe/steps│  │/api/recipe/nutri │  │/api/recipe/recom │   │
+│  │   (SSE Stream)   │  │  (Structured JSON)│  │ (LLM Recommender)│   │
+│  └────────┬─────────┘  └────────┬─────────┘  └────────┬─────────┘   │
+│           │                     │                      │             │
+│           └─────────────────────┴──────────────────────┘             │
+│                          │                                           │
+│              Gemini 3.5 Flash Lite API                               │
+│              Google Cloud Text-to-Speech                             │
+│              Rate Limiting (200 req/day/IP)                          │
+└──────────────────────────────────────────────────────────────────────┘
+                           │
+┌──────────────────────────┴───────────────────────────────────────────┐
+│                     INFRASTRUCTURE                                   │
+│                                                                      │
+│  GitHub Actions Cron (every 10 min) → keeps Render awake 24/7       │
+│  Firebase Firestore → user profiles, favorites, recipe history      │
+│  Firebase Auth → Google OAuth + email/password                      │
+│  Google Analytics 4 → usage tracking                                │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+---
 
 ## 🛠️ Technology Stack
 
 ### Frontend
-- **React 19** - Modern UI with hooks and context
-- **Vite** - Lightning-fast build tool
-- **Tailwind CSS** - Utility-first styling
-- **Framer Motion** - Smooth animations
-- **Firebase** - Authentication & Firestore database
+| Technology | Purpose |
+|---|---|
+| **React 19** | UI framework with hooks, context, and concurrent features |
+| **Vite 6** | Build tool and dev server |
+| **Tailwind CSS v4** | Utility-first styling with PostCSS |
+| **Framer Motion** | Page transitions and micro-animations |
+| **Firebase SDK** | Authentication and Firestore database |
+| **Lucide React** | Icon library |
+| **React Router v7** | Client-side routing |
 
 ### Backend
-- **Node.js + Express** - RESTful API server
-- **Gemini 2.5 Flash** - Recipe generation & analysis
-- **Google Cloud TTS** - Multilingual text-to-speech
-- **Unsplash API** - Dish imagery
+| Technology | Purpose |
+|---|---|
+| **Node.js + Express 5** | RESTful API server (ESM modules) |
+| **Gemini 3.5 Flash Lite** | Recipe generation, nutrition analysis, and personalized recommendations |
+| **Google Cloud TTS** | High-fidelity multilingual text-to-speech (Chirp3 HD voices) |
+| **Unsplash API** | Dish imagery |
+| **express-rate-limit** | API abuse prevention (200 requests/day/IP) |
 
-### Deployment
-- **Vercel** - Frontend hosting
-- **Render** - Backend API hosting
+### Infrastructure
+| Technology | Purpose |
+|---|---|
+| **Vercel** | Frontend hosting with edge CDN |
+| **Render** | Backend API hosting |
+| **GitHub Actions** | Cron job to prevent Render cold starts |
+| **Firebase** | Auth, Firestore (user data, favorites, history) |
+| **Google Analytics 4** | Usage analytics |
+
+---
 
 ## 📦 Installation
 
 ### Prerequisites
 - Node.js 18+ and npm
-- Firebase account
-- Gemini API key
-- Google Cloud TTS service account
-- Unsplash API key (optional)
+- Firebase project (Auth + Firestore enabled)
+- [Gemini API key](https://aistudio.google.com/apikey)
+- Google Cloud TTS service account (optional — for voice features)
+- Unsplash API key (optional — for dish images)
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/dhanunjay1729/chefspeak.git
-cd chefspeak
+git clone https://github.com/dhanunjay1729/chefspeak-2.0.git
+cd chefspeak-2.0
 ```
 
 ### 2. Install Dependencies
 
-**Frontend:**
 ```bash
+# Frontend
 npm install
-```
 
-**Backend:**
-```bash
-cd server
-npm install
-cd ..
+# Backend
+cd server && npm install && cd ..
 ```
 
 ### 3. Environment Configuration
 
 **Frontend (`.env`):**
-```bash
-# Firebase Configuration
+```env
+# Firebase
 VITE_FIREBASE_API_KEY=your_firebase_api_key
 VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
 VITE_FIREBASE_PROJECT_ID=your_project_id
@@ -91,121 +157,141 @@ VITE_API_BASE_URL=http://localhost:3002
 ```
 
 **Backend (`server/.env`):**
-```bash
-# Gemini API Key
+```env
 GEMINI_API_KEY=your_gemini_key
-
-# Google TTS Credentials (single-line JSON for production)
-GOOGLE_TTS_CREDENTIALS={"type":"service_account",...}
-
-# For local development
-GOOGLE_TTS_KEY_PATH=../google-tts-key.json
-
-# Port
+GOOGLE_TTS_CREDENTIALS={"type":"service_account",...}  # Single-line JSON for production
+GOOGLE_TTS_KEY_PATH=../google-tts-key.json             # For local dev
+UNSPLASH_API_KEY=your_unsplash_key
 PORT=3002
 ```
 
 ### 4. Run Locally
 
-**Start Backend:**
 ```bash
-cd server
-npm run dev
-```
+# Terminal 1 — Backend
+cd server && npm run dev
 
-**Start Frontend (in another terminal):**
-```bash
+# Terminal 2 — Frontend
 npm run dev
 ```
 
 Visit `http://localhost:5173` 🎉
 
+---
+
 ## 🌐 Deployment
 
-### Deploy to Vercel (Frontend)
+### Frontend → Vercel
 
-1. Install Vercel CLI:
 ```bash
 npm i -g vercel
-```
-
-2. Deploy:
-```bash
 vercel --prod
 ```
 
-3. Add environment variables in Vercel dashboard
+Add all `VITE_*` environment variables in the Vercel dashboard.
 
-### Deploy to Render (Backend)
+### Backend → Render
 
-1. Create a new Web Service on [Render](https://render.com)
+1. Create a **Web Service** on [Render](https://render.com)
 2. Connect your GitHub repository
-3. Set **Root Directory** to `server`
-4. Set **Build Command** to `npm install`
-5. Set **Start Command** to `npm start`
-6. Add environment variables:
-   - `GEMINI_API_KEY`
-   - `GOOGLE_TTS_CREDENTIALS` (single-line JSON)
-   - `PORT=3002`
+3. Configure:
+   - **Root Directory:** `server`
+   - **Build Command:** `npm install`
+   - **Start Command:** `npm start`
+4. Add environment variables: `GEMINI_API_KEY`, `GOOGLE_TTS_CREDENTIALS`, `PORT=3002`
 
-## 📱 Usage
+### Keep-Alive (Anti Cold Start)
 
-### 1. Sign Up / Login
-- Create an account with email or Google Sign-In
-- Set your preferred language and dietary preferences
+A GitHub Actions workflow (`.github/workflows/keep-alive.yml`) pings the `/health` endpoint every 10 minutes, preventing Render's free tier from sleeping. This runs automatically — no setup required.
+
+---
+
+## 📱 How It Works
+
+### 1. Sign Up & Personalize
+Create an account with email or Google Sign-In. Set your preferred language, dietary type (Veg/Vegan/Non-Veg), allergies, dislikes, and cooking skill level.
 
 ### 2. Get a Recipe
-- **Option A:** Enter a dish name directly (e.g., "Butter Chicken")
-- **Option B:** Select ingredients you have → Get suggestions
-- **Option C:** Browse your favorites or recent recipes
+- **Direct Search** — Type any dish name (e.g., "Butter Chicken")
+- **Cook by Ingredients** — Enter what you have → AI suggests dishes
+- **AI Recommendations** — Dashboard suggests dishes based on your favorites
+- **Favorites** — Revisit saved recipes
 
 ### 3. Cook with Voice Guidance
-- Tap the speaker icon to hear each step
-- Smart timers automatically detect cooking times
-- Navigate with commands: "Next", "Back", "Repeat"
+- Tap the 🔊 speaker icon to hear each step read aloud
+- Smart timers auto-detect phrases like "cook for 10 minutes" and start countdowns
+- Navigate steps: **Next**, **Back**, **Repeat**
 
-### 4. Customize Your Experience
-- Set dietary restrictions (Vegetarian, Vegan, Non-Veg)
-- Add allergies and dislikes
-- Choose your skill level (Beginner, Intermediate, Pro)
+### 4. Save & Build Your Profile
+- Favorite dishes you love ❤️
+- The more you favorite, the smarter your recommendations become
+- View structured nutritional breakdowns for every recipe
 
-## 🎯 Features in Detail
+---
 
-### Commands
-- **"Next"** - Move to next step
-- **"Back"** - Go to previous step
-- **"Repeat"** - Replay current step
-- **"Timer"** - Start/stop timer
+## 🧠 AI Recommendation Engine
 
-### Smart Timer Detection
-ChefSpeak automatically detects time-related instructions like:
-- "Cook for 10 minutes"
-- "Let it simmer for 5 minutes"
-- "Bake at 180°C for 30 minutes"
+ChefSpeak uses an **LLM-as-a-Recommender** pattern — no collaborative filtering or matrix factorization needed.
 
-### Dietary Preferences
-- **Vegetarian Mode** - Excludes meat, fish, and poultry
-- **Vegan Mode** - No animal products (dairy, eggs, honey)
-- **Allergy Tracking** - Automatically filters recipes based on your allergies
-- **Non-Veg Warning** - Alerts vegetarians when selecting non-veg dishes
+**How it works:**
+1. When you visit the Dashboard, the app fetches your top 10 favorited dishes from Firestore
+2. These are sent to a Gemini prompt along with your dietary restrictions and allergies
+3. Gemini analyzes the flavor profiles, cuisines, and spice levels of your favorites
+4. It returns 4 distinct new dish recommendations that share similar culinary appeal
+5. Click any recommendation to instantly start cooking it
+
+This approach works from Day 1 for every user — no cold-start problem, no minimum data threshold. Gemini's pre-trained culinary knowledge acts as the recommendation model.
+
+---
+
+## 🔒 API Security
+
+| Measure | Details |
+|---|---|
+| **Rate Limiting** | 200 API requests per IP per 24 hours |
+| **CORS Whitelist** | Only `chefspeak.vercel.app`, `*.vercel.app` (previews), and `localhost` |
+| **Server-Side Keys** | All API keys (Gemini, TTS, Unsplash) are server-side only — never exposed to the browser |
+| **Firebase Rules** | Firestore security rules restrict data access to authenticated users |
+| **Auth Guards** | Protected actions (favorites, recommendations) require authentication with a non-intrusive sign-in modal |
+
+---
 
 ## 📂 Project Structure
 
-```bash
+```
 Chefspeak/
 ├── src/
-│   ├── components/      # Reusable UI components
-│   ├── pages/           # Route pages
-│   ├── hooks/           # Custom React hooks
-│   ├── services/        # API & external services
-│   ├── contexts/        # React context providers
-│   └── utils/           # Helper functions
+│   ├── components/          # Reusable UI (FavoriteButton, Header, NutritionInfo, etc.)
+│   │   └── ui/              # Primitives (Button, WakeWordDetector, VoiceListener)
+│   ├── pages/               # Route pages (Dashboard, Assistant, Favorites, Profile, etc.)
+│   ├── hooks/               # Custom hooks (useUserProfile, useRecipe, useWakeWordDetector)
+│   ├── services/            # API clients (geminiService, ttsService, userService, etc.)
+│   ├── contexts/            # React contexts (AuthContext)
+│   └── utils/               # Helpers (timer parsing, analytics)
 ├── server/
-│   ├── index.js         # Express API server
-│   └── package.json     # Backend dependencies
-├── public/              # Static assets
-└── vercel.json          # Vercel deployment config
+│   └── index.js             # Express API — all endpoints (recipes, nutrition, TTS, recommendations)
+├── .github/
+│   └── workflows/
+│       └── keep-alive.yml   # Cron job to prevent Render cold starts
+├── public/                  # Static assets
+└── vercel.json              # Vercel deployment config
 ```
+
+---
+
+## 🗺️ Roadmap
+
+- [x] AI-powered personalized recommendations
+- [x] Structured nutritional data (JSON)
+- [x] Sign-in-required modal for protected actions
+- [x] GitHub Actions keep-alive for zero cold starts
+- [ ] Hands-free voice commands (wake word detection)
+- [ ] Pantry scanner via Gemini Vision API
+- [ ] Context-aware ingredient substitutions
+- [ ] Smart grocery list generation from meal plans
+- [ ] Dark mode support
+
+---
 
 ## 🤝 Contributing
 
@@ -217,23 +303,14 @@ Contributions are welcome! Here's how:
 4. Push to branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-**Note:** All contributions must comply with the CC BY-NC-SA 4.0 license (non-commercial use only).
+> **Note:** All contributions must comply with the CC BY-NC-SA 4.0 license (non-commercial use only).
 
-## 🗺️ Roadmap
-
-- [ ] Dark mode support
-- [ ] Meal planning calendar
-- [ ] Shopping list generation
-- [ ] Video recipe integration
-- [ ] Social sharing features
-- [ ] Recipe rating & reviews
-- [ ] Advanced search filters
+---
 
 ## 📄 License
 
 This project is licensed under the **Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License**.
 
-**What this means:**
 - ✅ You can copy, modify, and share this project
 - ✅ You must give credit to the original author
 - ❌ You cannot use this for commercial purposes
@@ -241,25 +318,28 @@ This project is licensed under the **Creative Commons Attribution-NonCommercial-
 
 See the [LICENSE](LICENSE) file for full details.
 
+---
+
 ## 🙏 Acknowledgments
 
-- **Google** for Gemini API
-- **Google Cloud** for Text-to-Speech
-- **Firebase** for authentication & database
-- **Vercel** & **Render** for hosting
+- **Google** — Gemini API, Cloud Text-to-Speech, Firebase, Analytics
+- **Unsplash** — Beautiful dish imagery
+- **Vercel** & **Render** — Hosting infrastructure
+
+---
 
 ## 📧 Contact
 
-**Dhanunjay** - pantadhanunjay@gmail.com
+**Dhanunjay** — [pantadhanunjay@gmail.com](mailto:pantadhanunjay@gmail.com)
 
-Project Link: [https://github.com/dhanunjay1729/chefspeak](https://github.com/dhanunjay1729/chefspeak)
+Project Link: [github.com/dhanunjay1729/chefspeak-2.0](https://github.com/dhanunjay1729/chefspeak-2.0)
 
 ---
 
 <div align="center">
-  
+
 **Made with ❤️ by Dhanunjay**
 
-[⭐ Star this repo](https://github.com/dhanunjay1729/chefspeak) | [🐛 Report Bug](https://github.com/dhanunjay1729/chefspeak/issues) | [💡 Request Feature](https://github.com/dhanunjay1729/chefspeak/issues)
+[⭐ Star this repo](https://github.com/dhanunjay1729/chefspeak-2.0) · [🐛 Report Bug](https://github.com/dhanunjay1729/chefspeak-2.0/issues) · [💡 Request Feature](https://github.com/dhanunjay1729/chefspeak-2.0/issues)
 
 </div>
