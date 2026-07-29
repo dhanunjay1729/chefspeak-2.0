@@ -1,0 +1,14 @@
+name: Keep Render Alive
+
+on:
+  schedule:
+    # Run every 10 minutes to prevent Render's 15-minute sleep
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Allows you to run it manually from the Actions tab if needed
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping ChefSpeak API Health Endpoint
+        run: curl -sSf https://chefspeak-api.onrender.com/health > /dev/null
