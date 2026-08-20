@@ -11,4 +11,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping ChefSpeak API Health Endpoint
-        run: curl -sSf https://chefspeak-api.onrender.com/health > /dev/null
+        run: curl -fsS --retry 5 --retry-delay 5 --retry-all-errors https://chefspeak-api.onrender.com/health > /dev/null
