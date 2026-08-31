@@ -27,9 +27,16 @@ function AnalyticsTracker() {
 }
 
 function App() {
-  // ✅ Initialize GA on mount
+  // ✅ Initialize GA and ping backend on mount
   useEffect(() => {
     AnalyticsService.initialize();
+    
+    // Ping the backend to wake it up from Render hibernation
+    // This runs silently in the background while the user looks at the UI
+    const backendUrl = import.meta.env.VITE_API_BASE_URL || 'https://chefspeak-api.onrender.com';
+    fetch(`${backendUrl}/health`)
+      .then(() => console.log('✅ Backend wake-up ping sent'))
+      .catch((err) => console.log('Backend wake-up ping network error:', err));
   }, []);
 
   return (

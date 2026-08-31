@@ -67,6 +67,7 @@ app.use(express.json());
 
 // Health check
 app.get('/health', (req, res) => {
+  console.log(`[${new Date().toISOString()}] 💓 Health check ping received`);
   res.json({ status: 'ok' });
 });
 
