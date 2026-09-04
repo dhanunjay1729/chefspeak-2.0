@@ -2,6 +2,7 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { Suspense, lazy, useEffect } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ToastProvider } from "./contexts/ToastContext";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import RedirectIfAuthed from "./routes/RedirectIfAuthed";
 import { AnalyticsService } from "./services/analyticsService"; // ✅ Import
@@ -32,7 +33,6 @@ function App() {
     AnalyticsService.initialize();
     
     // Ping the backend to wake it up from Render hibernation
-    // This runs silently in the background while the user looks at the UI
     const backendUrl = import.meta.env.VITE_API_BASE_URL || 'https://chefspeak-api.onrender.com';
     fetch(`${backendUrl}/health`)
       .then(() => console.log('✅ Backend wake-up ping sent'))
@@ -42,8 +42,9 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <AnalyticsTracker /> {/* ✅ Track page views */}
-        <Suspense fallback={<div>Loading…</div>}>
+        <ToastProvider>
+          <AnalyticsTracker /> {/* ✅ Track page views */}
+          <Suspense fallback={<div>Loading…</div>}>
           <Routes>
             {/* Public routes (redirect if already logged in) */}
             <Route
@@ -104,6 +105,7 @@ function App() {
             />
           </Routes>
         </Suspense>
+        </ToastProvider>
       </AuthProvider>
     </Router>
   );

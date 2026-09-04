@@ -3,6 +3,7 @@ import { Heart, Loader2, X } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { addFavoriteDish, isDishFavorited, removeFavoriteDish, getFavoriteIdByDishName } from "../services/userService";
+import { toast } from "../contexts/ToastContext";
 
 export function FavoriteButton({ 
   recipe, 
@@ -60,6 +61,7 @@ export function FavoriteButton({
         });
         setIsFavorited(true);
         onFavoriteChange(true);
+        toast.success("Saved to favorites");
       } else {
         // ✅ FIX: Look up the favorite's document ID and remove it
         const favId = await getFavoriteIdByDishName(user.uid, recipe.dishName);
@@ -67,10 +69,12 @@ export function FavoriteButton({
           await removeFavoriteDish(user.uid, favId);
           setIsFavorited(false);
           onFavoriteChange(false);
+          toast.info("Removed from favorites");
         }
       }
     } catch (error) {
       console.error("Failed to toggle favorite:", error);
+      toast.error("Unable to update favorites. Please check your connection.");
     } finally {
       setIsLoading(false);
     }

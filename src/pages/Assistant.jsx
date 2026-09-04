@@ -20,10 +20,11 @@ import Header from "../components/Header";
 import { useSearchParams } from "react-router-dom";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase";
-import { ChefHat, Sparkles } from "lucide-react";
+import { ChefHat, Sparkles, AlertCircle, RotateCcw } from "lucide-react";
 import { AudioControls } from "../components/AudioControls";
 import { LoadingSpinner } from "../components/LoadingSpinner"; // ✅ Import
 import { AnalyticsService } from "../services/analyticsService"; // ✅ Import
+import { toast } from "../contexts/ToastContext";
 
 export default function Assistant() {
   const { user } = useAuth();
@@ -144,7 +145,9 @@ export default function Assistant() {
     setPrefilledData({ dishName, servings, notes });
 
     fetchNutritionInfo(dishName, servings, notes, language, userPreferences).catch(() => {});
-    fetchRecipeSteps(dishName, servings, notes, language, userPreferences).catch(() => {});
+    fetchRecipeSteps(dishName, servings, notes, language, userPreferences).catch(() => {
+      toast.error("Unable to generate recipe steps. Tap 'Try Again' to retry.");
+    });
   };
 
   const handleFormSubmit = async ({ dishName, servings, notes }) => {
@@ -363,9 +366,35 @@ export default function Assistant() {
 
         {/* Error Display */}
         {recipeError && (
-          <div className="w-full max-w-md mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-center shadow-sm">
-            <p className="font-semibold mb-1">Oops, something went wrong</p>
-            <p className="text-sm">{recipeError}</p>
+          <div className="w-full max-w-md mb-6 p-4 rounded-xl bg-red-50/80 border border-red-200 text-red-800 shadow-sm flex flex-col items-center text-center gap-3">
+            <div className="flex items-center gap-2 font-semibold text-red-900">
+              <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+              <span>Unable to generate recipe</span>
+            </div>
+            <p className="text-sm text-red-700 leading-relaxed">
+              {recipeError.includes("failed:") || recipeError.includes("Failed")
+                ? "The recipe service is momentarily unavailable. Please check your connection or try again."
+                : recipeError}
+            </p>
+            {prefilledData && (
+              <button
+                type="button"
+                onClick={() => {
+                  const userPreferences = {
+                    dietType,
+                    allergies,
+                    dislikes,
+                    skillLevel,
+                  };
+                  processRecipeRequest(prefilledData, userPreferences);
+                }}
+                disabled={isLoading}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 active:bg-red-800 rounded-lg transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
+              >
+                <RotateCcw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                <span>{isLoading ? 'Retrying...' : 'Try Again'}</span>
+              </button>
+            )}
           </div>
         )}
 

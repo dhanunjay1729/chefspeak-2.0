@@ -13,8 +13,11 @@ import {
   Trash2,
   Wand2,
   Loader2,
+  AlertCircle,
+  RotateCcw,
 } from "lucide-react";
 import { GeminiService } from "../services/geminiService";
+import { toast } from "../contexts/ToastContext";
 
 const QUICK = [
   "onion",
@@ -37,6 +40,7 @@ export default function IngredientsPage() {
   const [value, setValue] = useState("");
   const [ingredients, setIngredients] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
 
   useEffect(() => {
@@ -93,11 +97,13 @@ export default function IngredientsPage() {
     setIngredients([]);
     setValue("");
     setSuggestions([]);
+    setError(null);
   };
 
   const onGetSuggestions = async () => {
     if (ingredients.length === 0) return;
     setLoading(true);
+    setError(null);
     try {
       const svc = new GeminiService();
       const resp = await svc.suggestRecipesByIngredients(ingredients);
@@ -111,13 +117,20 @@ export default function IngredientsPage() {
               }
         )
         .filter((x) => x.name);
-      setSuggestions(list);
-      localStorage.setItem(
-        "chefspeak.pantry",
-        JSON.stringify(ingredients)
-      );
-    } catch {
-      setSuggestions([]);
+
+      if (list.length === 0) {
+        setError("No recipe suggestions could be generated for these ingredients. Try adding more common pantry staples.");
+      } else {
+        setSuggestions(list);
+        localStorage.setItem(
+          "chefspeak.pantry",
+          JSON.stringify(ingredients)
+        );
+      }
+    } catch (err) {
+      console.error("Ingredients suggestion error:", err);
+      setError("Unable to generate suggestions. Please verify your connection or try again.");
+      toast.error("Failed to fetch recipe suggestions.");
     } finally {
       setLoading(false);
     }
@@ -282,10 +295,27 @@ export default function IngredientsPage() {
               )}
             </div>
 
-            {!loading && suggestions.length === 0 ? (
+            {error && !loading ? (
+              <div className="rounded-2xl border border-red-200 bg-red-50/70 p-6 text-center text-sm text-red-800 flex flex-col items-center gap-3 shadow-sm">
+                <div className="flex items-center gap-2 font-semibold text-red-900">
+                  <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+                  <span>Unable to generate suggestions</span>
+                </div>
+                <p className="text-zinc-600 max-w-md">{error}</p>
+                <Button
+                  onClick={onGetSuggestions}
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl border-red-200 bg-white text-red-700 hover:bg-red-50 hover:text-red-800 gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <RotateCcw size={14} />
+                  <span>Try Again</span>
+                </Button>
+              </div>
+            ) : !loading && suggestions.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-zinc-300 bg-white/60 p-6 text-center text-sm text-zinc-600">
                 {hasAny
-                  ? "No suggestions yet. Tap 'Get Suggestions' above."
+                  ? "No suggestions yet. Tap 'Get 5 Suggestions' above."
                   : "Add ingredients to get ideas."}
               </div>
             ) : loading ? (

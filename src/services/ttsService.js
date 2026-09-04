@@ -1,4 +1,6 @@
 // src/services/ttsService.js
+import { toast } from "../contexts/ToastContext";
+
 export class TTSService {
   constructor() {
     this.currentAudio = null;
@@ -73,6 +75,7 @@ export class TTSService {
       await this.currentAudio.play();
     } catch (error) {
       console.error('TTS error:', error);
+      toast.error('Audio narration is temporarily unavailable.');
     }
   }
 
