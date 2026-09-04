@@ -46,11 +46,7 @@ export function RecipeStep({
       {step.time && (
         <Button
           onClick={() => onStartTimer(step.time)}
-          className={`rounded-full px-5 py-2 text-sm w-fit font-medium transition-all ${
-            isActive
-              ? "bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white shadow-md shadow-rose-500/20"
-              : "bg-blue-600 hover:bg-blue-700 text-white"
-          }`}
+          className="rounded-full px-5 py-2 text-sm w-fit font-medium transition-all bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
         >
           ⏱ Start {step.time >= 60
             ? `${Math.floor(step.time / 60)} min`
