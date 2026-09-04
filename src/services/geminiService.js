@@ -5,19 +5,25 @@ export class GeminiService {
   }
 
   /**
-   * Fetch with retry optimized for slow free-tier cold starts
-   * (5 attempts, increasing delays: 3s, 10s, 15s, 20s, 25s)
+   * Fetch with retry optimized for slow free-tier cold starts and transient 5xx errors
    */
   async fetchWithRetry(url, options, attempt = 1) {
     try {
       const response = await fetch(url, options);
+      // If server returned 5xx (e.g. Render cold start or momentary spike) and we have retries left
+      if (!response.ok && response.status >= 500 && attempt < 3) {
+        const delay = attempt * 2000;
+        console.warn(`[Attempt ${attempt}/3] Backend returned ${response.status}. Retrying in ${delay / 1000}s...`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        return this.fetchWithRetry(url, options, attempt + 1);
+      }
       return response;
     } catch (error) {
       if (attempt < 5) {
         // Calculate delay based on attempt to give Render time to wake up
         const delay = attempt === 1 ? 3000 : (attempt + 1) * 5000; 
-        console.warn(`[Attempt ${attempt}/5] Backend might be asleep. Retrying in ${delay/1000}s...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        console.warn(`[Attempt ${attempt}/5] Backend might be asleep. Retrying in ${delay / 1000}s...`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
         return this.fetchWithRetry(url, options, attempt + 1);
       }
       throw error;
