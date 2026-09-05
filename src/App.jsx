@@ -15,6 +15,7 @@ const Ingredients = lazy(() => import("./pages/Ingredients"));
 const Profile = lazy(() => import("./pages/Profile"));
 const RecipeView = lazy(() => import("./pages/RecipeView"));
 const Favorites = lazy(() => import("./pages/Favorites"));
+const Help = lazy(() => import("./pages/Help"));
 
 // ✅ Component to track page views
 function AnalyticsTracker() {
@@ -84,6 +85,10 @@ function App() {
             <Route
               path="/recipe/:recipeId"
               element={<RecipeView />}
+            />
+            <Route
+              path="/help"
+              element={<Help />}
             />
 
             {/* Protected routes */}

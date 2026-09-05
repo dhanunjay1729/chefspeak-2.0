@@ -1,7 +1,7 @@
 // src/components/Header.jsx
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ChefHat, Menu, Settings, LogOut, User, SlidersHorizontal, X, Home, BookOpen, Heart } from "lucide-react"; // ✅ Add Home import
+import { ChefHat, Menu, Settings, LogOut, User, SlidersHorizontal, X, Home, BookOpen, Heart, HelpCircle } from "lucide-react"; // ✅ Add Home and HelpCircle import
 import { useAuth } from "../contexts/AuthContext";
 import { WelcomeTooltip } from "./WelcomeTooltip"; // ✅ Import
 
@@ -64,6 +64,7 @@ export default function Header() {
     { to: "/dashboard", icon: Home, label: "Dashboard" },
     { to: "/assistant", icon: ChefHat, label: "Assistant" },
     { to: "/favorites", icon: Heart, label: "Favorites" },
+    { to: "/help", icon: HelpCircle, label: "Help" },
     { to: "/profile", icon: User, label: "Profile" },
   ];
 
@@ -107,6 +108,13 @@ export default function Header() {
             </>
           ) : (
             <>
+              <Link
+                to="/help"
+                className="flex items-center gap-1.5 text-sm font-medium text-zinc-700 hover:text-fuchsia-600 transition-colors"
+              >
+                <HelpCircle size={17} />
+                <span>How it Works</span>
+              </Link>
               <Link
                 to="/login"
                 className="text-sm font-medium text-zinc-700 hover:text-fuchsia-600 transition-colors"
@@ -172,6 +180,14 @@ export default function Header() {
               </>
             ) : (
               <>
+                <Link
+                  to="/help"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-zinc-700 hover:bg-zinc-50 hover:text-fuchsia-600 transition-all"
+                >
+                  <HelpCircle size={20} />
+                  <span className="font-medium">How it Works</span>
+                </Link>
                 <Link
                   to="/login"
                   onClick={() => setMenuOpen(false)}
