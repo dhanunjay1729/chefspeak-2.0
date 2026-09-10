@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from "react-route
 import { Suspense, lazy, useEffect } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ToastProvider } from "./contexts/ToastContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import RedirectIfAuthed from "./routes/RedirectIfAuthed";
 import { AnalyticsService } from "./services/analyticsService"; // ✅ Import
@@ -42,6 +43,7 @@ function App() {
 
   return (
     <Router>
+      <ThemeProvider>
       <AuthProvider>
         <ToastProvider>
           <AnalyticsTracker /> {/* ✅ Track page views */}
@@ -112,6 +114,7 @@ function App() {
         </Suspense>
         </ToastProvider>
       </AuthProvider>
+      </ThemeProvider>
     </Router>
   );
 }
