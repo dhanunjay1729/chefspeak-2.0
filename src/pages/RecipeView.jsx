@@ -170,9 +170,9 @@ export default function RecipeView() {
     return (
       <>
         <Header />
-        <div className="min-h-screen bg-white py-10 px-4 flex flex-col items-center justify-center">
+        <div className="min-h-screen bg-[#FDFCFB] dark:bg-zinc-950 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-amber-50/60 dark:from-amber-900/20 via-[#FDFCFB] dark:via-zinc-950 to-[#FDFCFB] dark:to-zinc-950 py-10 px-4 flex flex-col items-center justify-center transition-colors">
           <div className="w-full max-w-md">
-            <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50/80 via-rose-50/80 to-fuchsia-50/80 backdrop-blur p-8 shadow-2xl relative overflow-hidden">
+            <div className="rounded-3xl border border-amber-200/60 dark:border-amber-900/30 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md p-8 shadow-2xl dark:shadow-[0_8px_30px_rgb(0,0,0,0.4)] relative overflow-hidden">
               {/* Animated background gradient orbs */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-fuchsia-400/20 to-transparent rounded-full blur-3xl animate-pulse" />
               <div className="absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-tr from-amber-400/20 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
@@ -181,7 +181,7 @@ export default function RecipeView() {
                 {/* Animated cooking pot with steam */}
                 <div className="relative">
                   {/* Main chef hat */}
-                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-amber-400 via-rose-500 to-fuchsia-500 flex items-center justify-center shadow-2xl shadow-rose-500/50">
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-amber-400 via-rose-500 to-fuchsia-500 flex items-center justify-center shadow-2xl shadow-rose-500/50 dark:shadow-rose-900/50">
                     <ChefHat className="w-12 h-12 text-white animate-bounce" style={{ animationDuration: '1.5s' }} />
                   </div>
                   
@@ -201,10 +201,10 @@ export default function RecipeView() {
 
                 {/* Animated text */}
                 <div className="text-center space-y-3">
-                  <p className="text-xl font-bold bg-gradient-to-r from-amber-600 via-rose-600 to-fuchsia-600 bg-clip-text text-transparent animate-pulse">
+                  <p className="text-xl font-bold bg-gradient-to-r from-amber-600 via-rose-600 to-fuchsia-600 dark:from-amber-400 dark:via-rose-400 dark:to-fuchsia-400 bg-clip-text text-transparent animate-pulse">
                     📖 Loading your recipe...
                   </p>
-                  <p className="text-sm text-zinc-600 flex items-center justify-center gap-2">
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400 flex items-center justify-center gap-2">
                     <Sparkles className="w-4 h-4 animate-spin" style={{ animationDuration: '3s' }} />
                     <span>Preparing your cooking instructions</span>
                     <Sparkles className="w-4 h-4 animate-spin" style={{ animationDuration: '3s', animationDelay: '1.5s' }} />
@@ -219,12 +219,12 @@ export default function RecipeView() {
                 </div>
 
                 {/* Progress bar with shimmer */}
-                <div className="w-full h-2 bg-zinc-200 rounded-full overflow-hidden relative">
+                <div className="w-full h-2 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden relative">
                   <div className="absolute inset-0 bg-gradient-to-r from-amber-500 via-rose-500 to-fuchsia-500 rounded-full animate-progress-shimmer" />
                 </div>
 
                 {/* Cooking tips */}
-                <div className="text-xs text-zinc-500 italic text-center max-w-xs animate-fade-in-out">
+                <div className="text-xs font-medium text-zinc-500 dark:text-zinc-500 italic text-center max-w-xs animate-fade-in-out">
                   💡 Your delicious recipe is almost ready!
                 </div>
               </div>
@@ -278,13 +278,13 @@ export default function RecipeView() {
     return (
       <>
         <Header />
-        <div className="min-h-screen bg-white py-10 px-4 flex flex-col items-center justify-center">
-          <p className="text-red-600 mb-4">{error || "Recipe not found"}</p>
+        <div className="min-h-screen bg-[#FDFCFB] dark:bg-zinc-950 py-10 px-4 flex flex-col items-center justify-center transition-colors">
+          <p className="text-red-600 dark:text-red-400 font-medium mb-4">{error || "Recipe not found"}</p>
           <button
             onClick={() => navigate("/dashboard")}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-600 text-white rounded-xl hover:bg-amber-700 shadow-sm transition-colors font-medium"
           >
-            <ArrowLeft size={16} />
+            <ArrowLeft size={18} />
             Back to Dashboard
           </button>
         </div>
@@ -295,25 +295,35 @@ export default function RecipeView() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-white py-10 px-4 flex flex-col items-center">
+      <div className="min-h-screen bg-[#FDFCFB] dark:bg-zinc-950 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-amber-50/60 dark:from-amber-900/20 via-[#FDFCFB] dark:via-zinc-950 to-[#FDFCFB] dark:to-zinc-950 py-10 px-4 flex flex-col items-center transition-colors">
         {/* Header with back button and recipe info */}
         <div className="w-full max-w-md mb-6">
           <button
             onClick={() => navigate("/dashboard")}
-            className="inline-flex items-center gap-2 text-amber-600 hover:text-amber-700 mb-4"
+            className="inline-flex items-center gap-2 text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 font-medium mb-4 transition-colors"
           >
-            <ArrowLeft size={16} />
+            <ArrowLeft size={18} />
             Back to Dashboard
           </button>
           
-          <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">{recipe.dishName}</h1>
-            <div className="flex gap-4 text-sm text-gray-600">
-              <span>Language: {recipe.language}</span>
-              {recipe.people && <span>Servings: {recipe.people}</span>}
+          <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md rounded-3xl border border-zinc-200/60 dark:border-zinc-800 p-6 mb-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none">
+            <h1 className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100 mb-3">{recipe.dishName}</h1>
+            <div className="flex gap-4 text-sm font-medium text-zinc-600 dark:text-zinc-400">
+              <span className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                {recipe.language}
+              </span>
+              {recipe.people && (
+                <span className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                  {recipe.people} servings
+                </span>
+              )}
             </div>
             {recipe.notes && (
-              <p className="text-sm text-gray-600 mt-2">Notes: {recipe.notes}</p>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800/60 italic">
+                "{recipe.notes}"
+              </p>
             )}
           </div>
         </div>
@@ -326,7 +336,7 @@ export default function RecipeView() {
         
         {/* ✅ Favorite button */}
         {recipe && (
-          <div className="w-full max-w-md mb-4">
+          <div className="w-full max-w-md mb-6">
             <FavoriteButton 
               recipe={recipe}
               className="w-full justify-center"
@@ -336,7 +346,7 @@ export default function RecipeView() {
         )}
 
         {/* Recipe Steps */}
-        <div className="space-y-3 w-full max-w-md">
+        <div className="space-y-4 w-full max-w-md pb-24">
           {steps.map((step, index) => (
             <Fragment key={index}>
               {/* ✅ Add ref to the active step */}
@@ -357,25 +367,25 @@ export default function RecipeView() {
               )}
               
               {timerOwnerIndex === index && remaining > 0 && (
-                <div className="pl-3">
+                <div className="pl-4">
                   <TimerDisplay remaining={remaining} />
-                  <div className="mt-2 flex items-center gap-2">
+                  <div className="mt-3 flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => {
                         startTimer(0);
                         setTimerOwnerIndex(null);
                       }}
-                      className="inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium
-                                 bg-red-50 text-red-700 hover:bg-red-100 active:bg-red-200"
+                      className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold
+                                 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 active:bg-red-200 transition-colors shadow-sm"
                     >
                       Stop
                     </button>
                     <button
                       type="button"
                       onClick={() => startTimer(remaining + 60)}
-                      className="inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium
-                                 bg-amber-50 text-amber-800 hover:bg-amber-100 active:bg-amber-200"
+                      className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold
+                                 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50 active:bg-amber-200 transition-colors shadow-sm"
                     >
                       +1 min
                     </button>
@@ -386,7 +396,7 @@ export default function RecipeView() {
           ))}
 
           {steps.length === 0 && (
-            <div className="text-center text-gray-500 py-8">
+            <div className="text-center text-zinc-500 dark:text-zinc-400 py-10 font-medium">
               No recipe steps found.
             </div>
           )}

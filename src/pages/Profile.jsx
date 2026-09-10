@@ -227,18 +227,18 @@ export default function Profile() {
         </div>
       )}
 
-      <div className="min-h-screen bg-gradient-to-b from-white to-zinc-50">
+      <div className="min-h-screen bg-[#FDFCFB] dark:bg-zinc-950 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-amber-50/60 dark:from-amber-900/20 via-[#FDFCFB] dark:via-zinc-950 to-[#FDFCFB] dark:to-zinc-950 transition-colors">
         <div className="mx-auto max-w-4xl px-4 py-8 md:py-10 space-y-6">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-extrabold tracking-tight text-zinc-900">
+            <h1 className="text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100">
               Your{" "}
-              <span className="bg-gradient-to-r from-fuchsia-600 to-amber-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-fuchsia-600 to-amber-600 dark:from-fuchsia-400 dark:to-amber-400 bg-clip-text text-transparent">
                 Profile
               </span>
             </h1>
             <button
               onClick={logout}
-              className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 active:bg-zinc-100 shadow-sm"
+              className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 active:bg-zinc-100 shadow-sm transition-colors"
             >
               <LogOut size={16} />
               Logout
@@ -248,20 +248,20 @@ export default function Profile() {
           {/* Diet Change Warning Modal */}
           {showDietChangeWarning && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-              <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
+              <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl dark:shadow-[0_8px_30px_rgb(0,0,0,0.4)] border border-zinc-200/60 dark:border-zinc-800 max-w-md w-full p-6 space-y-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                    <AlertCircle className="text-amber-600" size={20} />
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                    <AlertCircle className="text-amber-600 dark:text-amber-400" size={20} />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-zinc-900 mb-2">
+                    <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-2">
                       Change Dietary Preference?
                     </h3>
-                    <p className="text-sm text-zinc-600 mb-3">
-                      You're switching to <span className="font-semibold">{DIET_OPTIONS.find(d => d.value === pendingDietChange)?.label}</span>. 
+                    <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-3">
+                      You're switching to <span className="font-semibold text-zinc-900 dark:text-zinc-200">{DIET_OPTIONS.find(d => d.value === pendingDietChange)?.label}</span>. 
                       This means:
                     </p>
-                    <ul className="text-sm text-zinc-600 space-y-1 list-disc list-inside mb-3">
+                    <ul className="text-sm text-zinc-600 dark:text-zinc-400 space-y-1.5 list-disc list-inside mb-3">
                       {pendingDietChange === "veg" && (
                         <>
                           <li>No meat, fish, or poultry in recipes</li>
@@ -275,7 +275,7 @@ export default function Profile() {
                         </>
                       )}
                     </ul>
-                    <p className="text-xs text-zinc-500">
+                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-500">
                       Future recipe suggestions will respect this preference.
                     </p>
                   </div>
@@ -284,13 +284,13 @@ export default function Profile() {
                 <div className="flex gap-3 pt-2">
                   <button
                     onClick={cancelDietChange}
-                    className="flex-1 px-4 py-2 rounded-lg border border-zinc-200 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+                    className="flex-1 px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shadow-sm"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={confirmDietChange}
-                    className="flex-1 px-4 py-2 rounded-lg bg-gradient-to-r from-fuchsia-600 to-amber-600 text-sm font-semibold text-white hover:opacity-95"
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-600 to-amber-600 text-sm font-semibold text-white shadow-sm hover:opacity-95 transition-opacity"
                   >
                     Confirm Change
                   </button>
@@ -299,31 +299,31 @@ export default function Profile() {
             </div>
           )}
 
-          <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm">
+          <div className="rounded-3xl border border-zinc-200/60 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none overflow-hidden">
             {/* Top form section */}
-            <div className="p-6 border-b border-zinc-200">
-              <div className="grid gap-3">
+            <div className="p-6 md:p-8 border-b border-zinc-200/60 dark:border-zinc-800">
+              <div className="grid gap-6">
                 <div>
-                  <div className="text-xs uppercase tracking-wide text-zinc-500">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">
                     Display name
                   </div>
                   <input
                     value={form.displayName}
                     onChange={(e) => setField("displayName", e.target.value)}
                     placeholder="Your name"
-                    className="mt-1 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                    className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/50 dark:focus:ring-amber-500/30 transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   <div>
-                    <div className="text-xs uppercase tracking-wide text-zinc-500">
+                    <div className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">
                       Preferred language
                     </div>
                     <select
                       value={form.preferredLanguage}
                       onChange={(e) => setField("preferredLanguage", e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                      className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/50 dark:focus:ring-amber-500/30 transition-all"
                     >
                       <optgroup label="Indian Languages">
                         {LANGS.filter(l => 
@@ -346,13 +346,13 @@ export default function Profile() {
                     </select>
                   </div>
                   <div>
-                    <div className="text-xs uppercase tracking-wide text-zinc-500">
+                    <div className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">
                       Cooking skill
                     </div>
                     <select
                       value={form.skill}
                       onChange={(e) => setField("skill", e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                      className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/50 dark:focus:ring-amber-500/30 transition-all"
                     >
                       <option value="beginner">Beginner</option>
                       <option value="intermediate">Intermediate</option>
@@ -360,13 +360,13 @@ export default function Profile() {
                     </select>
                   </div>
                   <div>
-                    <div className="text-xs uppercase tracking-wide text-zinc-500">
+                    <div className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">
                       Diet preference
                     </div>
                     <select
                       value={form.diet}
                       onChange={(e) => handleDietChange(e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                      className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/50 dark:focus:ring-amber-500/30 transition-all"
                     >
                       {DIET_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>
@@ -379,10 +379,10 @@ export default function Profile() {
 
                 {/* Diet info banner */}
                 {currentDietOption && (
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 border border-blue-100">
-                    <Info size={16} className="text-blue-600 flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-blue-900">
-                      <span className="font-semibold">{currentDietOption.label}:</span>{" "}
+                  <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50 shadow-sm">
+                    <Info size={18} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-blue-900 dark:text-blue-200">
+                      <span className="font-bold">{currentDietOption.label}:</span>{" "}
                       {currentDietOption.description}
                     </p>
                   </div>
@@ -391,9 +391,9 @@ export default function Profile() {
             </div>
 
             {/* Preferences form */}
-            <div className="p-6 grid grid-cols-1 gap-6">
+            <div className="p-6 md:p-8 grid grid-cols-1 gap-8">
               <div>
-                <div className="text-sm font-medium text-zinc-900 mb-2">
+                <div className="text-sm font-bold text-zinc-900 dark:text-zinc-100 mb-2">
                   Allergies
                 </div>
                 <input
@@ -408,15 +408,15 @@ export default function Profile() {
                     )
                   }
                   placeholder="e.g., peanuts, dairy, shellfish"
-                  className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/50 dark:focus:ring-amber-500/30 transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
                 />
-                <p className="mt-1 text-xs text-zinc-500">
+                <p className="mt-2 text-xs font-medium text-zinc-500 dark:text-zinc-500">
                   Comma-separated list. Recipes will exclude these ingredients.
                 </p>
               </div>
 
               <div>
-                <div className="text-sm font-medium text-zinc-900 mb-2">
+                <div className="text-sm font-bold text-zinc-900 dark:text-zinc-100 mb-2">
                   Dislikes
                 </div>
                 <input
@@ -431,18 +431,18 @@ export default function Profile() {
                     )
                   }
                   placeholder="e.g., olives, cilantro, mushrooms"
-                  className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/50 dark:focus:ring-amber-500/30 transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
                 />
-                <p className="mt-1 text-xs text-zinc-500">
+                <p className="mt-2 text-xs font-medium text-zinc-500 dark:text-zinc-500">
                   Comma-separated list. Recipes will avoid these ingredients when possible.
                 </p>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-200">
+              <div className="flex items-center justify-end gap-3 pt-6 border-t border-zinc-200/60 dark:border-zinc-800 mt-2">
                 <button
                   disabled={!dirty || saving}
-                  onClick={handleCancel} // ✅ Changed from inline function
-                  className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 active:bg-zinc-100 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handleCancel}
+                  className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-5 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 active:bg-zinc-100 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <X size={16} />
                   Cancel
@@ -450,7 +450,7 @@ export default function Profile() {
                 <button
                   disabled={!dirty || saving}
                   onClick={save}
-                  className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-fuchsia-600 to-amber-600 px-4 py-2 text-sm font-semibold text-white shadow hover:opacity-95 active:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-amber-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md hover:shadow-lg active:translate-y-px disabled:opacity-60 disabled:cursor-not-allowed transition-all border-0"
                 >
                   {saving ? (
                     <Loader2 className="animate-spin" size={16} />
