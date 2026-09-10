@@ -23,20 +23,20 @@ export function RecipeStep({
       }}
       className={`rounded-xl p-5 flex flex-col space-y-3 transition-all duration-300 ${
         isActive 
-          ? "bg-white border-2 border-fuchsia-500 shadow-xl shadow-fuchsia-500/20 z-10 relative" 
-          : "bg-gray-100 border-2 border-transparent shadow"
+          ? "bg-white dark:bg-zinc-800 border-2 border-fuchsia-500 dark:border-fuchsia-400 shadow-xl shadow-fuchsia-500/20 dark:shadow-fuchsia-900/40 z-10 relative" 
+          : "bg-gray-100 dark:bg-zinc-900/50 border-2 border-transparent shadow"
       }`}
     >
       <div className="flex justify-between items-start gap-4">
-        <span className={`transition-all duration-300 ${isActive ? "text-lg font-semibold text-slate-900" : "text-base text-slate-700"}`}>
+        <span className={`transition-all duration-300 ${isActive ? "text-lg font-semibold text-slate-900 dark:text-zinc-100" : "text-base text-slate-700 dark:text-zinc-400"}`}>
           {step.text}
         </span>
         <button 
           onClick={() => onSpeak(step.text)}
           className={`p-2 rounded-full transition-colors flex-shrink-0 ${
             isActive 
-              ? "bg-fuchsia-100 text-fuchsia-600 hover:bg-fuchsia-200" 
-              : "text-gray-400 hover:bg-gray-200 hover:text-gray-700"
+              ? "bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 hover:bg-fuchsia-200 dark:hover:bg-fuchsia-900/50" 
+              : "text-gray-400 dark:text-zinc-600 hover:bg-gray-200 dark:hover:bg-zinc-800 hover:text-gray-700 dark:hover:text-zinc-300"
           }`}
         >
           <Volume2 className="w-5 h-5" />

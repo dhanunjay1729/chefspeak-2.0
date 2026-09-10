@@ -338,8 +338,10 @@ export default function Assistant() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-white py-10 px-4 flex flex-col items-center">
-        <h1 className="text-2xl font-bold mb-6">ChefSpeak Assistant</h1>
+      <div className="min-h-screen bg-[#FDFCFB] dark:bg-zinc-950 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-amber-50/60 dark:from-amber-900/20 via-[#FDFCFB] dark:via-zinc-950 to-[#FDFCFB] dark:to-zinc-950 selection:bg-amber-100 selection:text-amber-900 dark:selection:bg-amber-900/30 dark:selection:text-amber-100 font-sans transition-colors duration-300 py-10 px-4 flex flex-col items-center">
+        <h1 className="text-3xl md:text-4xl font-bold mb-8 text-zinc-900 dark:text-zinc-100 tracking-tight text-center">
+          ChefSpeak Assistant
+        </h1>
 
         <RecipeForm 
           onSubmit={handleFormSubmit} 
@@ -366,9 +368,9 @@ export default function Assistant() {
 
         {/* Error Display */}
         {recipeError && (
-          <div className="w-full max-w-md mb-6 p-4 rounded-xl bg-red-50/80 border border-red-200 text-red-800 shadow-sm flex flex-col items-center text-center gap-3">
-            <div className="flex items-center gap-2 font-semibold text-red-900">
-              <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+          <div className="w-full max-w-md mb-6 p-4 rounded-xl bg-red-50/80 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-800 dark:text-red-400 shadow-sm flex flex-col items-center text-center gap-3">
+            <div className="flex items-center gap-2 font-semibold text-red-900 dark:text-red-300">
+              <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-500 shrink-0" />
               <span>Unable to generate recipe</span>
             </div>
             <p className="text-sm text-red-700 leading-relaxed">
@@ -432,7 +434,7 @@ export default function Assistant() {
                 <p className="text-xl font-bold bg-gradient-to-r from-amber-600 via-rose-600 to-fuchsia-600 bg-clip-text text-transparent animate-pulse">
                   👨‍🍳 Crafting your recipe...
                 </p>
-                <p className="text-sm text-zinc-600 flex items-center justify-center gap-2">
+                <p className="text-sm text-zinc-600 dark:text-zinc-400 flex items-center justify-center gap-2">
                   <Sparkles className="w-4 h-4 animate-spin" style={{ animationDuration: '3s' }} />
                   <span>Preparing step-by-step instructions</span>
                   <Sparkles className="w-4 h-4 animate-spin" style={{ animationDuration: '3s', animationDelay: '1.5s' }} />
@@ -447,12 +449,12 @@ export default function Assistant() {
               </div>
 
               {/* Progress bar with shimmer */}
-              <div className="w-full h-2 bg-zinc-200 rounded-full overflow-hidden relative">
+              <div className="w-full h-2 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-amber-500 via-rose-500 to-fuchsia-500 rounded-full animate-progress-shimmer" />
               </div>
 
               {/* Cooking tips */}
-              <div className="text-xs text-zinc-500 italic text-center max-w-xs animate-fade-in-out">
+              <div className="text-xs text-zinc-500 dark:text-zinc-400 italic text-center max-w-xs animate-fade-in-out">
                 💡 Pro tip: The secret ingredient is always love!
               </div>
             </div>
