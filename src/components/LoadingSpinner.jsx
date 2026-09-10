@@ -53,10 +53,10 @@ export function LoadingSpinner({ size = "md", text }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3">
       <div className="relative">
-        <div className={`${sizes[size]} rounded-full border-4 border-zinc-200 border-t-amber-500 animate-spin`} />
+        <div className={`${sizes[size]} rounded-full border-4 border-zinc-200 dark:border-zinc-800 border-t-amber-500 animate-spin`} />
       </div>
       {text && (
-        <p className="text-sm font-medium text-zinc-600 animate-pulse">
+        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 animate-pulse">
           {text}
         </p>
       )}
