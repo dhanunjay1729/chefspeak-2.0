@@ -14,30 +14,16 @@ export class RecipeParser {
     'gmi'
   );
 
-  // TIME_REGEX: English + Gujarati, Hindi/Marathi, Bengali, Punjabi,
-  //             Telugu, Tamil, Kannada, Malayalam time words
+  // TIME_REGEX: Supports English + all 19 supported languages
   static TIME_REGEX =
     new RegExp(
       `(${INDIC_DIGIT_CLASS}+)\\s*(` +
-      'hours?|hrs?|hour|' +
-      'minutes?|mins?|min|' +
-      'seconds?|secs?|sec|' +
-      // Telugu
-      'నిమిషాలు|నిమిషం|గంటలు|గంట|' +
-      // Hindi / Marathi (Devanagari)
-      'सेकंड|मिनट|घंटा|मिनिटे|' +
-      // Tamil
-      'நிமிடங்கள்|நிமிடம்|மணி நேரம்|மணி|' +
-      // Malayalam
-      'സെക്കൻഡ്|മിനിറ്റ്|മണിക്കൂർ|' +
-      // Punjabi
-      'ਮਿੰਟ|ਘੰਟਾ|ਸਕਿੰਟ|' +
-      // Gujarati
-      'મિનિટ|કલાક|સેકન્ડ|' +
-      // Bengali
-      'মিনিট|ঘণ্টা|সেকেন্ড|' +
-      // Kannada
-      'ನಿಮಿಷ|ಗಂಟೆ|ಸೆಕೆಂಡ್' +
+      // Hours
+      'hours?|hrs?|hour|घंटा|घंटे|గంట|గంటలు|மணி|மணிநேரம்|ಗಂಟೆ|ಗಂಟೆಗಳು|മണിക്കൂർ|तास|કલાક|ঘণ্টা|ਘੰਟਾ|ਘੰਟੇ|hora|horas|heure|heures|stunde|stunden|ora|ore|時間|小时|鐘頭|час|часа|часов|' +
+      // Minutes
+      'minutes?|mins?|min|मिनट|నిమిషం|నిమిషాలు|நிமிடம்|நிமிடங்கள்|ನಿಮಿಷ|ನಿಮಿಷಗಳು|മിനിറ്റ്|मिनिट|मिनिटे|મિનિટ|মিনিট|ਮਿੰਟ|minuto|minutos|minute|minutes|minuten|minuti|分|分钟|минута|минуты|минут|' +
+      // Seconds
+      'seconds?|secs?|sec|सेकंड|సెకను|సెకన్లు|வினாடி|வினாடிகள்|ಸೆಕೆಂಡ್|ಸೆಕೆಂಡುಗಳು|സെക്കൻഡ്|सेकंद|સેકન્ડ|সেকেন্ড|ਸਕਿੰਟ|segundo|segundos|seconde|secondes|sekunde|sekunden|secondi|secondo|秒|секунд|секунды|секунда' +
       ')',
       'i'
     );
@@ -92,35 +78,18 @@ export class RecipeParser {
     const unit = (m[2] || '').toLowerCase();
     if (Number.isNaN(valueRaw) || valueRaw === null) return null;
 
-    if (
-      unit.includes('hour') ||
-      unit.includes('hr') ||
-      unit.includes('గంట') ||
-      unit.includes('घंट') ||
-      unit.includes('மணி') ||
-      unit.includes('മണിക്കൂർ') ||
-      unit.includes('ਘੰਟਾ') ||
-      unit.includes('કλαக') ||
-      unit.includes('ঘণ্টা') ||
-      unit.includes('ಗಂಟೆ')
-    ) {
+    // Hours
+    if (/^(hour|hr|घंट|గంట|மணி|ಗಂಟೆ|മണിക്കൂർ|तास|કલાક|ঘণ্টা|ਘੰਟ|hora|heure|stunde|or[ae]|時間|小时|鐘頭|час)/i.test(unit)) {
       return valueRaw * 3600;
     }
-    if (
-      unit.includes('min') ||
-      unit.includes('నిమిష') ||
-      unit.includes('मिनट') ||
-      unit.includes('मिनिट') ||
-      unit.includes('நிமிட') ||
-      unit.includes('മിനിറ്റ്') ||
-      unit.includes('ਮਿੰਟ') ||
-      unit.includes('મिनिट') ||
-      unit.includes('মিনিট') ||
-      unit.includes('ನಿಮಿಷ')
-    ) {
+    
+    // Minutes
+    if (/^(min|मिनट|నిమిష|நிமிட|ನಿಮಿಷ|മിനിറ്റ്|मिनिट|મિનિટ|মিনিট|ਮਿੰਟ|分|минут)/i.test(unit)) {
       return valueRaw * 60;
     }
-    return valueRaw; // seconds
+    
+    // Seconds (default fallback if matched by TIME_REGEX but not hour/min)
+    return valueRaw; 
   }
 
   // Convert Indic digit strings to an integer
