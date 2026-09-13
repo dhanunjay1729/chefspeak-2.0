@@ -24,20 +24,20 @@ const usersRef = (uid) => doc(db, "users", uid);
 // Fetch user's preferred language 
 export class UserService {
   static async getUserLanguage(user) {
-    if (!user) return "English";
+    if (!user) return "Indian_english";
     
     try {
       const docRef = doc(db, "users", user.uid);
-      // docSnap represents the document snapshot
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const data = docSnap.data();
-        return data.language || "English";
+        // Profile.jsx saves the field as 'preferredLanguage'
+        return data.preferredLanguage || data.language || "Indian_english";
       }
-      return "English";
+      return "Indian_english";
     } catch (err) {
       console.error("Failed to fetch language:", err);
-      return "English";
+      return "Indian_english";
     }
   }
 }
