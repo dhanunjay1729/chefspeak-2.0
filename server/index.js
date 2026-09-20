@@ -158,7 +158,6 @@ app.use(express.json());
 
 // Health check
 app.get('/health', (req, res) => {
-  console.log(`[${new Date().toISOString()}] 💓 Health check ping received`);
   res.json({ status: 'ok' });
 });
 
@@ -233,7 +232,6 @@ app.post('/api/recipe/steps', async (req, res) => {
     for (const model of MODELS_CASCADE) {
       for (let attempt = 1; attempt <= 2; attempt++) {
         try {
-          console.log(`[Steps] Attempting stream with ${model} (attempt ${attempt})...`);
           const stream = await ai.models.generateContentStream({
             model,
             contents: prompt,
@@ -246,7 +244,7 @@ app.post('/api/recipe/steps', async (req, res) => {
           successfulModel = model;
           break;
         } catch (streamErr) {
-          console.warn(`[Steps] ${model} attempt ${attempt} failed:`, streamErr.message?.slice(0, 100));
+          console.warn(`[Steps] Model fallback triggered:`, streamErr.message?.slice(0, 60));
           if (attempt === 1 && isRetryableError(streamErr)) {
             await new Promise(r => setTimeout(r, 1200 + Math.random() * 500));
             continue;
@@ -260,8 +258,6 @@ app.post('/api/recipe/steps', async (req, res) => {
     if (!activeStream) {
       throw new Error('All recipe generation models are temporarily busy. Please try again in a few seconds.');
     }
-
-    console.log(`[Steps] Streaming active with model: ${successfulModel}`);
 
     // Setup SSE headers only after stream is established
     res.setHeader('Content-Type', 'text/event-stream');
@@ -496,14 +492,6 @@ app.post('/api/recipe/suggest-by-ingredients', async (req, res) => {
 app.post('/api/speak', async (req, res) => {
   const { text, language } = req.body;
 
-  // 🔍 DEBUG: Log what we receive
-  console.log('🎤 TTS Request:', { 
-    textPreview: text?.substring(0, 50) + '...', 
-    language,
-    languageLower: language?.toLowerCase() 
-  });
-
-  // Map with LOWERCASE keys to match .toLowerCase() conversion
   const languageVoiceMap = {
     indian_english: 'en-IN-Chirp-HD-O',
     us_english: 'en-US-Chirp3-HD-Aoede',
@@ -529,9 +517,6 @@ app.post('/api/speak', async (req, res) => {
   const voiceName = languageVoiceMap[language?.toLowerCase()] || 'en-IN-Wavenet-D';
   const languageCode = voiceName.split('-').slice(0, 2).join('-');
 
-  // 🔍 DEBUG: Log what voice we're using
-  console.log('🗣️ Using voice:', voiceName, 'for language code:', languageCode);
-
   try {
     if (!ttsClient) {
       throw new Error('TTS client not initialized');
@@ -543,13 +528,11 @@ app.post('/api/speak', async (req, res) => {
       audioConfig: { audioEncoding: 'MP3' },
     });
 
-    console.log('✅ TTS success, audio length:', response.audioContent?.length);
-
     res.setHeader('Content-Type', 'audio/mpeg');
     res.send(response.audioContent);
   } catch (error) {
-    console.error('❌ TTS Error:', error.message);
-    res.status(500).json({ error: 'TTS generation failed', details: error.message });
+    console.error('[TTS] Speech synthesis failed:', error.message);
+    res.status(500).json({ error: 'TTS generation failed' });
   }
 });
 

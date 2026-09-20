@@ -187,10 +187,8 @@ export default function Assistant() {
       if (refreshProfile) {
         await refreshProfile();
       }
-      
-      console.log(`Updated user diet preference to: ${newDietType}`);
     } catch (error) {
-      console.error("Failed to update diet preference:", error);
+      console.error("Failed to update diet preference:", error.message);
       throw error;
     }
   };
@@ -221,10 +219,8 @@ export default function Assistant() {
         };
         
         await processRecipeRequest(pendingFormData, updatedPreferences);
-        
-        console.log("Your diet preference has been updated to Non-Vegetarian");
       } catch (error) {
-        console.error("Failed to update diet preference:", error);
+        console.error("Failed to update diet preference:", error.message);
         const overriddenPreferences = {
           ...userPreferences,
           dietType: 'nonveg'

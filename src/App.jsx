@@ -36,9 +36,7 @@ function App() {
     
     // Ping the backend to wake it up from Render hibernation
     const backendUrl = import.meta.env.VITE_API_BASE_URL || 'https://chefspeak-api.onrender.com';
-    fetch(`${backendUrl}/health`)
-      .then(() => console.log('✅ Backend wake-up ping sent'))
-      .catch((err) => console.log('Backend wake-up ping network error:', err));
+    fetch(`${backendUrl}/health`).catch(() => {/* silent — server may be cold starting */});
   }, []);
 
   return (

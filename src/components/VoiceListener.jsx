@@ -49,7 +49,6 @@ export default function VoiceListener({ onCommand }) {
     recognition.onresult = (event) => {
       isListeningRef.current = false;
       const transcript = event.results[0][0].transcript.toLowerCase().trim();
-      log(`🗣️ Heard: ${transcript}`);
 
       let command = null;
       if (transcript.includes("next")) command = "next";
@@ -57,10 +56,8 @@ export default function VoiceListener({ onCommand }) {
       else if (transcript.includes("back") || transcript.includes("previous")) command = "back";
 
       if (command) {
-        log(`✅ Command recognized: ${command}`);
         onCommand(command, transcript);
       } else {
-        log("🤷 No matching command found");
         onCommand("unknown", transcript);
       }
 

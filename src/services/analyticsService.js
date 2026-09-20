@@ -6,15 +6,11 @@ export class AnalyticsService {
   static initialized = false;
 
   static initialize() {
-    if (!MEASUREMENT_ID) {
-      console.warn("Google Analytics Measurement ID not found");
-      return;
-    }
+    if (!MEASUREMENT_ID) return;
 
     if (!this.initialized) {
       ReactGA.initialize(MEASUREMENT_ID);
       this.initialized = true;
-      console.log("✅ Google Analytics initialized");
     }
   }
 
