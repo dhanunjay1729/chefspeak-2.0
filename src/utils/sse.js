@@ -4,10 +4,12 @@ export async function readRecipeStream(body, onContent) {
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
+  let completed = false;
   const consume = (line) => {
     if (!line.startsWith('data:')) return;
     const data = line.slice(5).trim();
-    if (!data || data === '[DONE]') return;
+    if (!data) return;
+    if (data === '[DONE]') { completed = true; return; }
     const parsed = JSON.parse(data);
     if (parsed.error) throw new Error(parsed.error);
     if (typeof parsed.content === 'string') onContent(parsed.content);
@@ -24,6 +26,7 @@ export async function readRecipeStream(body, onContent) {
       if (done) break;
     }
     if (buffer.trim()) consume(buffer);
+    if (!completed) throw new Error("Recipe generation was interrupted. Please try again.");
   } finally {
     await reader.cancel().catch(() => {});
     reader.releaseLock();

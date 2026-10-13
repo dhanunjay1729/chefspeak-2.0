@@ -57,6 +57,7 @@ export function FavoriteButton({
           people: recipe.people,
           notes: recipe.notes,
           ingredients: recipe.ingredients,
+          cookingNotes: recipe.cookingNotes || "",
           recipeSteps: recipe.recipeSteps,
           nutritionInfo: recipe.nutritionInfo,
         });

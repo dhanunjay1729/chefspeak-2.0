@@ -1,4 +1,5 @@
-import { motion } from "framer-motion";
+import { ingredientLabel } from '../utils/recipeData';
+import { motion as Motion } from "framer-motion";
 import { Volume2 } from "lucide-react";
 import { Button } from "./ui/button";
 
@@ -7,10 +8,11 @@ export function RecipeStep({
   index, 
   isActive, 
   onSpeak, 
-  onStartTimer 
+  onStartTimer,
+  ingredients = []
 }) {
   return (
-    <motion.div
+    <Motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ 
         opacity: 1, 
@@ -43,6 +45,9 @@ export function RecipeStep({
         </button>
       </div>
 
+      {Array.isArray(ingredients) && step.ingredientIds?.length > 0 && (
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">{step.ingredients ? 'For this step:' : 'Recipe ingredients:'} {(step.ingredients || ingredients.filter(item => step.ingredientIds.includes(item.id))).map(ingredientLabel).join(', ')}</p>
+      )}
       {step.time && (
         <Button
           onClick={() => onStartTimer(step.time)}
@@ -53,6 +58,6 @@ export function RecipeStep({
             : `${step.time} sec`} Timer
         </Button>
       )}
-    </motion.div>
+    </Motion.div>
   );
 }

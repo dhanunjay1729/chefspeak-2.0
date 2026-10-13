@@ -45,11 +45,11 @@ export class UserService {
 // Write one recent dish entry under users/{uid}/recentDishes
 export async function addRecentDish(
   uid,
-  { dishName, imageUrl, language, people, notes, ingredients, recipeSteps, nutritionInfo }
+  { dishName, imageUrl, language, people, notes, ingredients, recipeSteps, nutritionInfo, cookingNotes = "" }
 ) {
   if (!uid || !dishName) return;
   const colRef = collection(db, "users", uid, "recentDishes");
-  await addDoc(colRef, {
+  const saved = await addDoc(colRef, {
     dishName,
     imageUrl: imageUrl || "",
     language: language || "English",
@@ -58,8 +58,11 @@ export async function addRecentDish(
     ingredients: ingredients || "",
     recipeSteps: recipeSteps || [],
     nutritionInfo: nutritionInfo || null,
+    cookingNotes,
+    schemaVersion: Array.isArray(ingredients) ? 2 : 1,
     createdAt: serverTimestamp(),
   });
+  return saved.id;
 }
 
 // Read recent dishes (latest first)
@@ -82,14 +85,14 @@ export async function getDishById(uid, dishId) {
 
   // if found in recent dishes, return the dish data
   if (snap.exists()) {
-    return { id: snap.id, ...snap.data() };
+    return { ...snap.data(), id: snap.id, recipeCollection: "recentDishes" };
   }
   
   // If not found, try favorites
   ref = doc(db, "users", uid, "favoriteDishes", dishId);
   snap = await getDoc(ref);
   
-  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+  return snap.exists() ? { ...snap.data(), id: snap.id, recipeCollection: "favoriteDishes" } : null;
 }
 
 // Get full user profile document at users/{uid}
@@ -120,7 +123,7 @@ export async function deleteRecentDish(uid, dishId) {
 // Add favorite dishes functionality
 export async function addFavoriteDish(
   uid,
-  { dishName, imageUrl, language, people, notes, ingredients, recipeSteps, nutritionInfo }
+  { dishName, imageUrl, language, people, notes, ingredients, recipeSteps, nutritionInfo, cookingNotes = "" }
 ) {
   if (!uid || !dishName) return;
   const colRef = collection(db, "users", uid, "favoriteDishes");
@@ -133,6 +136,8 @@ export async function addFavoriteDish(
     ingredients: ingredients || "",
     recipeSteps: recipeSteps || [],
     nutritionInfo: nutritionInfo || null,
+    cookingNotes,
+    schemaVersion: Array.isArray(ingredients) ? 2 : 1,
     createdAt: serverTimestamp(),
   });
   
@@ -181,4 +186,8 @@ export async function getFavoriteIdByDishName(uid, dishName) {
   const snap = await getDocs(q);
   const match = snap.docs.find(doc => doc.data().dishName === dishName);
   return match ? match.id : null;
+}
+export async function saveCookingNotes(uid, recipeCollection, recipeId, cookingNotes) {
+  if (!uid || !recipeId || !['recentDishes', 'favoriteDishes'].includes(recipeCollection)) throw new Error('Recipe is not saved yet');
+  await updateDoc(doc(db, 'users', uid, recipeCollection, recipeId), { cookingNotes, updatedAt: serverTimestamp() });
 }

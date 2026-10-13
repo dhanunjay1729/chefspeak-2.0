@@ -1,3 +1,5 @@
+import { readLocalCookingNotes, writeLocalCookingNotes } from '../utils/localRecipeNotes';
+import { RecipeNotes } from '../components/RecipeNotes';
 import { readCookingSession, writeCookingSession, clearCookingSession } from '../utils/cookingSession';
 // src/pages/Assistant.jsx
 import { useEffect, useRef, useState, Fragment } from "react"; // ✅ Make sure useRef is imported
@@ -16,7 +18,7 @@ import { IngredientsInfo } from "../components/IngredientsInfo";
 import { FavoriteButton } from "../components/FavoriteButton";
 import { NonVegWarningDialog } from "../components/NonVegWarningDialog";
 import { DishAnalysisService } from "../services/dishAnalysisService";
-import { addRecentDish } from "../services/userService";
+import { addRecentDish, saveCookingNotes } from "../services/userService";
 import Header from "../components/Header"; 
 import { useSearchParams } from "react-router-dom";
 import { doc, updateDoc } from "firebase/firestore";
@@ -65,13 +67,17 @@ export default function Assistant() {
   const [timerOwnerIndex, setTimerOwnerIndex] = useState(null);
   const [stateRestored, setStateRestored] = useState(false);
   const [finished, setFinished] = useState(false);
+  const [checkedIds, setCheckedIds] = useState([]);
+  const [cookingNotes, setCookingNotes] = useState('');
+  const [savedRecipeId, setSavedRecipeId] = useState(null);
+  const generationRef = useRef(0);
   const recipeSavedRef = useRef(false); // ✅ FIX #5: Prevent duplicate saves
 
   // ✅ Add ref to track the active step element
   const activeStepRef = useRef(null);
 
   useEffect(() => {
-    if (!readCookingSession(user?.uid) && !searchParams.get("language")) setLanguage(preferredLanguage);
+    if (readCookingSession(user?.uid)?.path !== "/assistant" && !searchParams.get("language")) setLanguage(preferredLanguage);
   }, [preferredLanguage, user?.uid, searchParams]);
 
   useEffect(() => {
@@ -129,6 +135,7 @@ export default function Assistant() {
 
     recipeSavedRef.current = true;
 
+    const generation = generationRef.current;
     addRecentDish(user.uid, {
       dishName: selectedDish,
       imageUrl: undefined,
@@ -138,12 +145,24 @@ export default function Assistant() {
       ingredients: ingredients,
       recipeSteps: steps,
       nutritionInfo: nutritionInfo || null,
-    }).catch(error => console.error("Failed to save complete recipe:", error));
-  }, [isLoading, isLoadingNutrition, user?.uid, selectedDish, ingredientsComplete, steps, ingredients, nutritionInfo, language, prefilledData, recipeError]);
+      cookingNotes,
+    }).then(id => {
+      if (generation === generationRef.current) setSavedRecipeId(id);
+    }).catch(() => {
+      if (generation === generationRef.current) {
+        recipeSavedRef.current = false;
+        toast.error('Unable to save recipe history. Keep this page open to continue cooking.');
+      }
+    });
+  }, [isLoading, isLoadingNutrition, user?.uid, selectedDish, ingredientsComplete, steps, ingredients, nutritionInfo, language, prefilledData, recipeError, cookingNotes]);
 
   const processRecipeRequest = async (formData, userPreferences) => {
     const { dishName, servings, notes } = formData;
     
+    generationRef.current++;
+    setSavedRecipeId(null);
+    setCookingNotes('');
+    setCheckedIds([]);
     clearCookingSession(user?.uid);
     setFinished(false);
     stopTimer();
@@ -154,7 +173,10 @@ export default function Assistant() {
 
     setPrefilledData({ dishName, servings, notes });
 
-    fetchRecipeSteps(dishName, servings, notes, language, userPreferences).catch(() => {
+    const generation = generationRef.current;
+    fetchRecipeSteps(dishName, servings, notes, language, userPreferences).then(recipe => {
+      if (generation === generationRef.current && !user?.uid && recipe) setCookingNotes(readLocalCookingNotes({ dishName, ingredients: recipe.ingredients }) || '');
+    }).catch(() => {
       toast.error("Unable to generate recipe steps. Tap 'Try Again' to retry.");
     });
   };
@@ -286,13 +308,17 @@ export default function Assistant() {
     ingredients: ingredients,
     recipeSteps: steps,
     nutritionInfo: nutritionInfo || null,
+    cookingNotes,
   } : null;
 
   useEffect(() => {
     const session = readCookingSession(user?.uid);
-    if (!searchParams.get('dish') && session?.path === '/assistant') {
+    if (session?.path === '/assistant' && (!searchParams.get('dish') || session.search === searchParams.toString())) {
       firstStepSpokenRef.current = true;
-      recipeSavedRef.current = Boolean(session.recipeSaved);
+      recipeSavedRef.current = Boolean(session.savedRecipeId);
+      setSavedRecipeId(session.savedRecipeId || null);
+      setCookingNotes((!user?.uid ? readLocalCookingNotes(session.recipe) : null) ?? session.recipe.cookingNotes ?? '');
+      setCheckedIds(session.checkedIds || []);
       setSelectedDish(session.recipe.dishName);
       setLanguage(session.recipe.language || preferredLanguage);
       setPrefilledData({ dishName: session.recipe.dishName, servings: session.recipe.people || 2, notes: session.recipe.notes || '' });
@@ -308,11 +334,11 @@ export default function Assistant() {
   useEffect(() => {
     if (!stateRestored || finished || isLoading || recipeError || !selectedDish || !steps.length) return;
     writeCookingSession(user?.uid, {
-      path: '/assistant', recipeSaved: recipeSavedRef.current,
-      recipe: { dishName: selectedDish, language, people: prefilledData?.servings || 2, notes: prefilledData?.notes || '', ingredients, recipeSteps: steps, nutritionInfo },
+      path: '/assistant', search: searchParams.toString(), recipeSaved: recipeSavedRef.current, savedRecipeId, checkedIds,
+      recipe: { dishName: selectedDish, language, people: prefilledData?.servings || 2, notes: prefilledData?.notes || '', ingredients, recipeSteps: steps, nutritionInfo, cookingNotes },
       currentStepIndex, deadline, timerOwnerIndex,
     });
-  }, [stateRestored, finished, isLoading, recipeError, user?.uid, selectedDish, language, prefilledData, ingredients, steps, nutritionInfo, currentStepIndex, deadline, timerOwnerIndex]);
+  }, [stateRestored, finished, isLoading, recipeError, user?.uid, selectedDish, language, prefilledData, ingredients, steps, nutritionInfo, currentStepIndex, deadline, timerOwnerIndex, savedRecipeId, checkedIds, cookingNotes, searchParams]);
 
   const finishCooking = () => {
     clearCookingSession(user?.uid);
@@ -358,7 +384,7 @@ export default function Assistant() {
         {(ingredientsComplete || isLoadingNutrition) && <NutritionInfo nutritionInfo={nutritionInfo} isLoading={isLoadingNutrition} />}
         
         {/* Ingredients Info - separate */}
-        <IngredientsInfo ingredients={ingredients} isLoading={isLoadingIngredients} />
+        {(ingredientsComplete || isLoadingIngredients) && <IngredientsInfo ingredients={ingredients} isLoading={isLoadingIngredients} checkedIds={checkedIds} onToggle={id => setCheckedIds(current => current.includes(id) ? current.filter(value => value !== id) : [...current, id])} />}
         
         {/* Favorite button */}
         {currentRecipe && !isLoading && !isLoadingNutrition && (
@@ -473,6 +499,7 @@ export default function Assistant() {
               <div ref={index === currentStepIndex ? activeStepRef : null}>
                 <RecipeStep
                   step={step}
+                  ingredients={ingredients}
                   index={index}
                   isActive={index === currentStepIndex}
                   onSpeak={handleSpeak}
@@ -516,6 +543,11 @@ export default function Assistant() {
           ))}
         </div>
 
+        {!isLoading && steps.length > 0 && <RecipeNotes notes={cookingNotes} localOnly={!user?.uid} disabled={Boolean(user?.uid) && !savedRecipeId} onSave={async notes => {
+          if (user?.uid) await saveCookingNotes(user.uid, 'recentDishes', savedRecipeId, notes);
+          else if (!writeLocalCookingNotes(currentRecipe, notes)) throw new Error('Notes could not be stored');
+          setCookingNotes(notes);
+        }} />}
         {!isLoading && steps.length > 0 && !finished && (
           <button type="button" onClick={finishCooking} className="my-6 px-5 py-3 rounded-xl bg-emerald-600 text-white font-semibold">Finish cooking</button>
         )}

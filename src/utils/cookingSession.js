@@ -12,6 +12,7 @@ export function readCookingSession(uid, storage = localStorage) {
     if (!(session.path === '/assistant' || /^\/recipe\/[^/]+$/.test(session.path))) return null;
     return {
       ...session,
+      checkedIds: Array.isArray(session.checkedIds) ? session.checkedIds.filter(id => typeof id === "string") : [],
       currentStepIndex: Math.max(0, Math.min(Number.isInteger(session.currentStepIndex) ? session.currentStepIndex : 0, session.recipe.recipeSteps.length - 1)),
       deadline: Number.isFinite(session.deadline) ? session.deadline : null,
       timerOwnerIndex: Number.isInteger(session.timerOwnerIndex) && session.timerOwnerIndex >= 0 && session.timerOwnerIndex < session.recipe.recipeSteps.length ? session.timerOwnerIndex : null,

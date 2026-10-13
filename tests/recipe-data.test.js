@@ -21,3 +21,11 @@ test('recipe events survive every possible byte boundary', async () => {
   await readRecipeStream(body, (content) => output.push(content));
   assert.deepEqual(output, ['1. టమాటో\n', '2. Cook\n']);
 });
+
+test('a truncated event stream is reported as incomplete', async () => {
+  const body = new ReadableStream({ start(controller) {
+    controller.enqueue(new TextEncoder().encode('data: {"content":"Partial recipe"}\n\n'));
+    controller.close();
+  }});
+  await assert.rejects(readRecipeStream(body, () => {}), /interrupted/);
+});

@@ -18,6 +18,16 @@ const RecipeView = lazy(() => import("./pages/RecipeView"));
 const Favorites = lazy(() => import("./pages/Favorites"));
 const Help = lazy(() => import("./pages/Help"));
 
+function RecipeRoute() {
+  const location = useLocation();
+  return <RecipeView key={location.pathname} />;
+}
+
+function AssistantRoute() {
+  const location = useLocation();
+  return <Assistant key={location.search} />;
+}
+
 // ✅ Component to track page views
 function AnalyticsTracker() {
   const location = useLocation();
@@ -76,7 +86,7 @@ function App() {
             />
             <Route
               path="/assistant"
-              element={<Assistant />}
+              element={<AssistantRoute />}
             />
             <Route
               path="/ingredients"
@@ -84,7 +94,7 @@ function App() {
             />
             <Route
               path="/recipe/:recipeId"
-              element={<RecipeView />}
+              element={<RecipeRoute />}
             />
             <Route
               path="/help"

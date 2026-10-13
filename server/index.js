@@ -1,3 +1,4 @@
+import { recipeSchema } from './recipeSchema.js';
 import { normalizeSuggestions } from './pantry.js';
 import { sanitizeNutrition } from './nutrition.js';
 import express from 'express';
@@ -166,7 +167,7 @@ app.use('/api/', apiLimiter);
 // Recipe steps endpoint
 app.post('/api/recipe/steps', async (req, res) => {
   try {
-    const { dish, people, extraNotes, language = 'English', userPreferences } = req.body;
+    const { dish, people, extraNotes, language = 'English', userPreferences, outputFormat } = req.body;
 
     let prompt = `Give me a clear, numbered, step-by-step recipe for ${dish} for ${people} people. And the first step should be the list of ingredients required with their quantities.(make the first line catchy)`;
 
@@ -204,12 +205,17 @@ app.post('/api/recipe/steps', async (req, res) => {
       prompt += ` Additional notes: ${extraNotes}.`;
     }
 
-    prompt += ` Respond only in ${language}. Do not use markdown bold formatting (**), markdown headers (#), or bullet points. Use exactly one numbered step per line.`;
-
-    const systemInstruction = `You are a multilingual professional chef assistant. Output only cooking steps, numbered, in ${language}. Always respect dietary restrictions and allergies. Do not use bold formatting or asterisks. Each numbered step must be on its own line.`;
+    let systemInstruction;
+    if (outputFormat === 'structured') {
+      prompt = prompt.replace('And the first step should be the list of ingredients required with their quantities.(make the first line catchy)', '');
+      prompt += ` Respond with a JSON array of objects only. First object: {"type":"ingredients","items":[{"id":"i1","name":"Rice","quantity":1,"unit":"cup","optional":false}]}. Then one object per cooking step: {"type":"step","text":"Rinse the rice.","ingredientIds":["i1"],"ingredientAmounts":[{"ingredientId":"i1","quantity":1,"unit":"cup"}],"timeSeconds":null}. Include every ingredient and its quantity in the first object, including oil, seasoning and water. Use unique IDs and reference only those IDs in each step. ingredientAmounts must list the amount actually used in that step, such as half the oil now and the rest later; use an empty array when no ingredients are used. Use null quantity for amounts such as to taste and explain that in unit. timeSeconds is a positive integer only for a timer the user should start during that step; otherwise null. Keep JSON keys, type values and IDs exactly as specified. Write ingredient names, units and step text in ${language}. Do not include an ingredients step among cooking steps.`;
+      systemInstruction = 'You are a professional chef. Respect all dietary restrictions and allergies. Output a JSON array using the requested schema. The first object must contain all ingredients; subsequent objects must contain cooking steps. Never use markdown fences, comments, or extra text.';
+    } else {
+      prompt += ` Respond only in ${language}. Do not use markdown bold formatting (**), markdown headers (#), or bullet points. Use exactly one numbered step per line.`;
+      systemInstruction = `You are a multilingual professional chef assistant. Output only cooking steps, numbered, in ${language}. Always respect dietary restrictions and allergies. Each numbered step must be on its own line.`;
+    }
 
     let activeStream = null;
-    let successfulModel = null;
 
     // Multi-model streaming fallback
     for (const model of MODELS_CASCADE) {
@@ -221,10 +227,10 @@ app.post('/api/recipe/steps', async (req, res) => {
             config: {
               systemInstruction,
               temperature: 0.4,
+              ...(outputFormat === "structured" ? { responseMimeType: "application/json", responseJsonSchema: recipeSchema } : {}),
             }
           });
           activeStream = stream;
-          successfulModel = model;
           break;
         } catch (streamErr) {
           console.warn(`[Steps] Model fallback triggered:`, streamErr.message?.slice(0, 60));

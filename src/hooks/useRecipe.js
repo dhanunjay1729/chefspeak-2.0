@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { GeminiService } from '../services/geminiService';
-import { RecipeParser } from '../utils/recipeParser';
+import { createRecipeAssembler } from '../utils/recipeData';
 import { readRecipeStream } from '../utils/sse';
 
 export function useRecipe() {
@@ -24,34 +24,26 @@ export function useRecipe() {
     setCurrentStepIndex(0);
     setNutritionInfo(null);
     setError(null);
-    let buffer = '';
-    const allSteps = [];
-    const publish = (extracted) => {
-      allSteps.push(...extracted);
+    const assembler = createRecipeAssembler(recipe => {
       if (active()) {
-        setIngredients(allSteps[0]?.text || '');
-        setSteps(allSteps.slice(1));
+        setIngredients(recipe.ingredients);
+        setSteps(recipe.steps);
       }
-    };
+    });
     try {
-      const response = await service.fetchRecipeSteps(dish, people, extraNotes, language, userPreferences);
-      await readRecipeStream(response.body, (content) => {
-        buffer += content;
-        const parsed = RecipeParser.extractStreamSteps(buffer);
-        buffer = parsed.remaining;
-        publish(parsed.steps);
-      });
-      publish(RecipeParser.parseSteps(buffer));
-      if (allSteps.length < 2) throw new Error('The recipe was incomplete. Please try again.');
+      const response = await service.fetchRecipeSteps(dish, people, extraNotes, language, userPreferences, { outputFormat: 'structured' });
+      await readRecipeStream(response.body, content => assembler.append(content));
+      const recipe = assembler.finish();
       if (!active()) return;
       setIsLoading(false);
       try {
-        const nutritionResponse = await service.fetchNutritionInfo(dish, people, extraNotes, language, userPreferences, allSteps[0].text);
+        const nutritionResponse = await service.fetchNutritionInfo(dish, people, extraNotes, language, userPreferences, recipe.ingredients);
         const nutrition = await nutritionResponse.json();
         if (active()) setNutritionInfo(nutrition.error ? null : nutrition);
       } catch {
         if (active()) setNutritionInfo(null);
       }
+      return recipe;
     } catch (err) {
       if (active()) setError(err.message || 'Failed to generate recipe');
       throw err;

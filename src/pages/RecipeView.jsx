@@ -1,10 +1,10 @@
+import { RecipeNotes } from '../components/RecipeNotes';
 import { readCookingSession, writeCookingSession, clearCookingSession } from '../utils/cookingSession';
 // src/pages/RecipeView.jsx
 import { useEffect, useRef, useState, Fragment } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { TTSService } from "../services/ttsService";
-import { UserService } from "../services/userService";
-import { getDishById } from "../services/userService";
+import { getDishById, saveCookingNotes } from "../services/userService";
 import { useTimer } from "../hooks/useTimer";
 import { RecipeStep } from "../components/RecipeStep";
 import { TimerDisplay } from "../components/TimerDisplay";
@@ -36,6 +36,7 @@ export default function RecipeView() {
 
   const { remaining, deadline, startTimer, stopTimer, restoreTimer, addMinute } = useTimer();
   const [finished, setFinished] = useState(false);
+  const [checkedIds, setCheckedIds] = useState([]);
   
   // ✅ Create TTS instance ONCE using useRef (persists across re-renders)
   const ttsService = useRef(new TTSService()).current;
@@ -45,15 +46,6 @@ export default function RecipeView() {
 
   // ✅ Add ref to track the active step element
   const activeStepRef = useRef(null);
-
-  // Load user language
-  useEffect(() => {
-    const loadUserLanguage = async () => {
-      const userLanguage = await UserService.getUserLanguage(user);
-      setLanguage(userLanguage || "English");
-    };
-    loadUserLanguage();
-  }, [user]);
 
   // Load recipe from database
   useEffect(() => {
@@ -69,6 +61,7 @@ export default function RecipeView() {
           const session = readCookingSession(user.uid);
           if (session?.path === `/recipe/${recipeId}`) {
             setCurrentStepIndex(session.currentStepIndex);
+            setCheckedIds(session.checkedIds || []);
             restoreTimer(session.deadline);
             setTimerOwnerIndex(session.timerOwnerIndex);
             firstStepSpokenRef.current = true;
@@ -95,9 +88,9 @@ export default function RecipeView() {
   useEffect(() => {
     if (loading || !recipe || !steps.length || finished) return;
     writeCookingSession(user?.uid, {
-      path: `/recipe/${recipeId}`, recipe, currentStepIndex, deadline, timerOwnerIndex,
+      path: `/recipe/${recipeId}`, recipe, currentStepIndex, deadline, timerOwnerIndex, checkedIds,
     });
-  }, [loading, recipe, steps.length, finished, user?.uid, recipeId, currentStepIndex, deadline, timerOwnerIndex]);
+  }, [loading, recipe, steps.length, finished, user?.uid, recipeId, currentStepIndex, deadline, timerOwnerIndex, checkedIds]);
 
   const finishCooking = () => {
     clearCookingSession(user?.uid);
@@ -355,7 +348,7 @@ export default function RecipeView() {
         <NutritionInfo nutritionInfo={nutritionInfo} isLoading={false} />
         
         {/* ✅ Ingredients Info - separate */}
-        <IngredientsInfo ingredients={ingredients} isLoading={false} />
+        <IngredientsInfo ingredients={ingredients} isLoading={false} checkedIds={checkedIds} onToggle={id => setCheckedIds(current => current.includes(id) ? current.filter(value => value !== id) : [...current, id])} />
         
         {/* ✅ Favorite button */}
         {recipe && (
@@ -375,6 +368,7 @@ export default function RecipeView() {
               <div ref={index === currentStepIndex ? activeStepRef : null}>
                 <RecipeStep
                   step={step}
+                  ingredients={ingredients}
                   index={index}
                   isActive={index === currentStepIndex}
                   onSpeak={handleSpeak}
@@ -425,6 +419,10 @@ export default function RecipeView() {
         </div>
 
         {/* Navigation Controls */}
+        <RecipeNotes notes={recipe.cookingNotes || ''} onSave={async notes => {
+          await saveCookingNotes(user.uid, recipe.recipeCollection, recipeId, notes);
+          setRecipe(current => ({ ...current, cookingNotes: notes }));
+        }} />
         {!finished && <button type="button" onClick={finishCooking} className="my-6 px-5 py-3 rounded-xl bg-emerald-600 text-white font-semibold">Finish cooking</button>}
         <NavigationControls
           onBack={handleNavigateBack}
