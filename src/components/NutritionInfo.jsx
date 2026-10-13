@@ -1,11 +1,11 @@
-import { motion } from "framer-motion";
+import { motion as Motion } from "framer-motion";
 import { Flame, Beef, Droplets, Wheat } from "lucide-react";
 
 export function NutritionInfo({ nutritionInfo, isLoading }) {
-  if (!nutritionInfo && !isLoading) return null;
+
 
   return (
-    <motion.div
+    <Motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-3xl p-6 mb-6 border border-zinc-200/60 dark:border-zinc-800 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none"
@@ -14,12 +14,15 @@ export function NutritionInfo({ nutritionInfo, isLoading }) {
         <span className="text-xl mr-2">🥗</span>
         <h3 className="text-lg font-bold text-zinc-800 dark:text-zinc-100">Nutrition Facts <span className="text-xs text-zinc-500 dark:text-zinc-400 font-normal ml-1">per serving</span></h3>
       </div>
-      
+
+      {nutritionInfo && <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4">AI estimate per serving; actual values depend on ingredients and preparation.</p>}
       {isLoading ? (
         <div className="flex items-center space-x-2 py-4">
           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-fuchsia-600"></div>
           <span className="text-zinc-600 dark:text-zinc-400 font-medium text-sm">Calculating macros...</span>
         </div>
+      ) : !nutritionInfo ? (
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">Nutrition unavailable.</p>
       ) : typeof nutritionInfo === 'object' ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <MacroCard 
@@ -57,7 +60,7 @@ export function NutritionInfo({ nutritionInfo, isLoading }) {
           {nutritionInfo}
         </div>
       )}
-    </motion.div>
+    </Motion.div>
   );
 }
 

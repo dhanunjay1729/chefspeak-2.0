@@ -28,7 +28,7 @@ import { toast } from "../contexts/ToastContext";
 
 export default function Assistant() {
   const { user } = useAuth();
-  const { preferredLanguage, dietType, allergies, dislikes, skillLevel, refreshProfile } = useUserProfile();
+  const { preferredLanguage, dietType, allergies, dislikes, skillLevel, refresh: refreshProfile } = useUserProfile();
   const [searchParams] = useSearchParams();
   const [language, setLanguage] = useState("English");
   const [selectedDish, setSelectedDish] = useState("");
@@ -42,7 +42,6 @@ export default function Assistant() {
   const {
     steps,
     ingredients,
-    hasIngredients,
     ingredientsComplete,
     currentStepIndex,
     isLoading,
@@ -51,7 +50,6 @@ export default function Assistant() {
     isLoadingNutrition,
     error: recipeError,
     fetchRecipeSteps,
-    fetchNutritionInfo,
     handleNext,
     handleBack,
   } = useRecipe();
@@ -115,6 +113,7 @@ export default function Assistant() {
     // Don't save if already saved, or if no recipe data
     if (
       recipeSavedRef.current ||
+      recipeError ||
       !user?.uid ||
       !selectedDish ||
       !ingredientsComplete ||
@@ -133,7 +132,7 @@ export default function Assistant() {
       recipeSteps: steps,
       nutritionInfo: nutritionInfo || null,
     }).catch(error => console.error("Failed to save complete recipe:", error));
-  }, [isLoading, isLoadingNutrition, user?.uid, selectedDish, ingredientsComplete, steps, ingredients, nutritionInfo, language, prefilledData]);
+  }, [isLoading, isLoadingNutrition, user?.uid, selectedDish, ingredientsComplete, steps, ingredients, nutritionInfo, language, prefilledData, recipeError]);
 
   const processRecipeRequest = async (formData, userPreferences) => {
     const { dishName, servings, notes } = formData;
@@ -144,7 +143,6 @@ export default function Assistant() {
 
     setPrefilledData({ dishName, servings, notes });
 
-    fetchNutritionInfo(dishName, servings, notes, language, userPreferences).catch(() => {});
     fetchRecipeSteps(dishName, servings, notes, language, userPreferences).catch(() => {
       toast.error("Unable to generate recipe steps. Tap 'Try Again' to retry.");
     });
@@ -346,7 +344,7 @@ export default function Assistant() {
         />
 
         {/* Nutrition Info - separate */}
-        <NutritionInfo nutritionInfo={nutritionInfo} isLoading={isLoadingNutrition} />
+        {(ingredientsComplete || isLoadingNutrition) && <NutritionInfo nutritionInfo={nutritionInfo} isLoading={isLoadingNutrition} />}
         
         {/* Ingredients Info - separate */}
         <IngredientsInfo ingredients={ingredients} isLoading={isLoadingIngredients} />
@@ -357,7 +355,6 @@ export default function Assistant() {
             <FavoriteButton 
               recipe={currentRecipe}
               className="w-full justify-center"
-              onFavoriteChange={(favorited) => {}}
             />
           </div>
         )}

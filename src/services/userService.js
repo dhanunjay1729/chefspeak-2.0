@@ -45,7 +45,7 @@ export class UserService {
 // Write one recent dish entry under users/{uid}/recentDishes
 export async function addRecentDish(
   uid,
-  { dishName, imageUrl, language, people, notes, recipeSteps, nutritionInfo }
+  { dishName, imageUrl, language, people, notes, ingredients, recipeSteps, nutritionInfo }
 ) {
   if (!uid || !dishName) return;
   const colRef = collection(db, "users", uid, "recentDishes");
@@ -55,8 +55,9 @@ export async function addRecentDish(
     language: language || "English",
     people: people ?? null,
     notes: notes || "",
+    ingredients: ingredients || "",
     recipeSteps: recipeSteps || [],
-    nutritionInfo: nutritionInfo || "",
+    nutritionInfo: nutritionInfo || null,
     createdAt: serverTimestamp(),
   });
 }
@@ -119,7 +120,7 @@ export async function deleteRecentDish(uid, dishId) {
 // Add favorite dishes functionality
 export async function addFavoriteDish(
   uid,
-  { dishName, imageUrl, language, people, notes, recipeSteps, nutritionInfo }
+  { dishName, imageUrl, language, people, notes, ingredients, recipeSteps, nutritionInfo }
 ) {
   if (!uid || !dishName) return;
   const colRef = collection(db, "users", uid, "favoriteDishes");
@@ -129,6 +130,7 @@ export async function addFavoriteDish(
     language: language || "English",
     people: people ?? null,
     notes: notes || "",
+    ingredients: ingredients || "",
     recipeSteps: recipeSteps || [],
     nutritionInfo: nutritionInfo || null,
     createdAt: serverTimestamp(),

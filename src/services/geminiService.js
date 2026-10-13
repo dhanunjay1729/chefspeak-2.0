@@ -54,7 +54,7 @@ export class GeminiService {
     return response;
   }
 
-  async fetchNutritionInfo(dish, people, extraNotes, language, userPreferences = {}) {
+  async fetchNutritionInfo(dish, people, extraNotes, language, userPreferences = {}, ingredients = "") {
     const url = `${this.baseURL}/api/recipe/nutrition`;
     const payload = {
       dish,
@@ -62,6 +62,7 @@ export class GeminiService {
       extraNotes,
       language,
       userPreferences,
+      ingredients,
     };
 
     const response = await this.fetchWithRetry(url, {

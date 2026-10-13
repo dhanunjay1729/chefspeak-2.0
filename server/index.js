@@ -1,3 +1,4 @@
+import { sanitizeNutrition } from './nutrition.js';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -91,25 +92,6 @@ function cleanAndParseJson(rawText, fallback = {}) {
       return fallback;
     }
   }
-}
-
-// Guarantee exact numeric keys for nutrition
-function sanitizeNutrition(data) {
-  const result = { calories: 350, protein: 12, fat: 10, carbs: 45 };
-  if (!data || typeof data !== 'object') return result;
-
-  for (const key of ['calories', 'protein', 'fat', 'carbs']) {
-    let val = data[key];
-    if (typeof val === 'number' && !isNaN(val)) {
-      result[key] = Math.round(val);
-    } else if (typeof val === 'string') {
-      const parsed = parseFloat(val.replace(/[^0-9.]/g, ''));
-      if (!isNaN(parsed)) {
-        result[key] = Math.round(parsed);
-      }
-    }
-  }
-  return result;
 }
 
 // Initialize Google TTS
@@ -279,7 +261,7 @@ app.post('/api/recipe/steps', async (req, res) => {
   } catch (error) {
     console.error('Recipe steps error:', error);
     if (res.headersSent) {
-      res.write(`data: ${JSON.stringify({ content: '\n[Notice: Generation encountered an issue.]' })}\n\n`);
+      res.write(`data: ${JSON.stringify({ error: 'Recipe generation was interrupted. Please try again.' })}\n\n`);
       res.write('data: [DONE]\n\n');
       res.end();
     } else {
@@ -291,19 +273,12 @@ app.post('/api/recipe/steps', async (req, res) => {
 // Nutrition info endpoint with fallback, retry, and strict numeric sanitization
 app.post('/api/recipe/nutrition', async (req, res) => {
   try {
-    const { dish, people, extraNotes, userPreferences } = req.body;
-
-    let prompt = `Give me an approximate nutritional breakdown (per serving) for ${dish} for ${people} people.`;
-
-    if (userPreferences?.dietType) {
-      prompt += ` This is a ${userPreferences.dietType} recipe.`;
+    const { people, ingredients } = req.body;
+    if (!ingredients || !Number.isFinite(Number(people)) || Number(people) <= 0) {
+      return res.status(400).json({ error: "Recipe ingredients and servings are required" });
     }
 
-    if (extraNotes?.trim()) {
-      prompt += ` Additional notes: ${extraNotes}.`;
-    }
-
-    prompt += ` Include approximate numerical values (in grams/kcal) for calories, protein, fat, and carbohydrates. Respond ONLY with a valid JSON object using the following exact keys: "calories", "protein", "fat", "carbs". The values should be numbers only, no strings or units.`;
+    const prompt = `Estimate nutrition per serving for this exact ingredient list, which makes ${people} servings: ${JSON.stringify(ingredients)}. Include oil, dairy, and all listed ingredients. Return ONLY valid JSON with numeric, non-negative keys: "calories", "protein", "fat", "carbs". Calories are kcal; other values are grams. Do not substitute a different recipe.`;
 
     const systemInstruction = `You are a multilingual professional chef assistant. Return nutrition facts strictly as a JSON object with numeric values only. Keys: "calories", "protein", "fat", "carbs".`;
 
@@ -322,17 +297,12 @@ app.post('/api/recipe/nutrition', async (req, res) => {
     const parsedRaw = cleanAndParseJson(completion.text);
     const sanitized = sanitizeNutrition(parsedRaw);
 
-    res.json(sanitized);
+    if (!sanitized) throw new Error("Invalid nutrition estimate");
+    res.json({ ...sanitized, source: "ai_estimate" });
 
   } catch (error) {
     console.error('Nutrition info error:', error);
-    // Graceful fallback values so UI never crashes or displays empty card
-    res.json({
-      calories: 320,
-      protein: 11,
-      fat: 9,
-      carbs: 42
-    });
+    res.status(503).json({ error: 'Nutrition unavailable' });
   }
 });
 
