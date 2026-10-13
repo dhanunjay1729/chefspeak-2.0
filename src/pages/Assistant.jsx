@@ -1,3 +1,4 @@
+import { readCookingSession, writeCookingSession, clearCookingSession } from '../utils/cookingSession';
 // src/pages/Assistant.jsx
 import { useEffect, useRef, useState, Fragment } from "react"; // ✅ Make sure useRef is imported
 import { useAuth } from "../contexts/AuthContext";
@@ -50,11 +51,12 @@ export default function Assistant() {
     isLoadingNutrition,
     error: recipeError,
     fetchRecipeSteps,
+    restoreRecipe,
     handleNext,
     handleBack,
   } = useRecipe();
 
-  const { remaining, startTimer } = useTimer();
+  const { remaining, deadline, startTimer, stopTimer, restoreTimer, addMinute } = useTimer();
   
   // ✅ Create TTS instance ONCE using useRef (persists across re-renders)
   const ttsService = useRef(new TTSService()).current;
@@ -62,14 +64,15 @@ export default function Assistant() {
   const firstStepSpokenRef = useRef(false);
   const [timerOwnerIndex, setTimerOwnerIndex] = useState(null);
   const [stateRestored, setStateRestored] = useState(false);
+  const [finished, setFinished] = useState(false);
   const recipeSavedRef = useRef(false); // ✅ FIX #5: Prevent duplicate saves
 
   // ✅ Add ref to track the active step element
   const activeStepRef = useRef(null);
 
   useEffect(() => {
-    setLanguage(preferredLanguage);
-  }, [preferredLanguage]);
+    if (!readCookingSession(user?.uid) && !searchParams.get("language")) setLanguage(preferredLanguage);
+  }, [preferredLanguage, user?.uid, searchParams]);
 
   useEffect(() => {
     const dishFromUrl = searchParams.get('dish');
@@ -96,11 +99,11 @@ export default function Assistant() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (!firstStepSpokenRef.current && ingredientsComplete && steps.length > 0) {
+    if (stateRestored && !firstStepSpokenRef.current && ingredientsComplete && steps.length > 0) {
       firstStepSpokenRef.current = true;
       ttsService.speak(steps[0].text, language).catch(() => {});
     }
-  }, [steps, ingredientsComplete, language, ttsService]);
+  }, [steps, ingredientsComplete, language, ttsService, stateRestored]);
 
   // ✅ FIX #5: Save recipe only ONCE, after both loading states resolve
   useEffect(() => {
@@ -137,6 +140,10 @@ export default function Assistant() {
   const processRecipeRequest = async (formData, userPreferences) => {
     const { dishName, servings, notes } = formData;
     
+    clearCookingSession(user?.uid);
+    setFinished(false);
+    stopTimer();
+    ttsService.stop();
     setSelectedDish(dishName);
     firstStepSpokenRef.current = false;
     setTimerOwnerIndex(null);
@@ -278,38 +285,38 @@ export default function Assistant() {
   } : null;
 
   useEffect(() => {
-    if (stateRestored) return;
-
-    const savedState = sessionStorage.getItem('chefspeak_assistant_state');
-    if (savedState) {
-      try {
-        const state = JSON.parse(savedState);
-        
-        const dishFromUrl = searchParams.get('dish');
-        if (!dishFromUrl && state.selectedDish) {
-          setSelectedDish(state.selectedDish);
-          setLanguage(state.language || preferredLanguage);
-          setPrefilledData(state.prefilledData || null);
-        }
-      } catch (error) {
-        console.error('Failed to restore state:', error);
-      }
+    const session = readCookingSession(user?.uid);
+    if (!searchParams.get('dish') && session?.path === '/assistant') {
+      firstStepSpokenRef.current = true;
+      recipeSavedRef.current = Boolean(session.recipeSaved);
+      setSelectedDish(session.recipe.dishName);
+      setLanguage(session.recipe.language || preferredLanguage);
+      setPrefilledData({ dishName: session.recipe.dishName, servings: session.recipe.people || 2, notes: session.recipe.notes || '' });
+      restoreRecipe(session.recipe, session.currentStepIndex);
+      restoreTimer(session.deadline);
+      setTimerOwnerIndex(session.timerOwnerIndex);
     }
     setStateRestored(true);
-  }, [stateRestored, searchParams, preferredLanguage]);
+    // Restore once when this page opens; later profile changes must not reset cooking.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
-    if (!stateRestored) return;
+    if (!stateRestored || finished || isLoading || recipeError || !selectedDish || !steps.length) return;
+    writeCookingSession(user?.uid, {
+      path: '/assistant', recipeSaved: recipeSavedRef.current,
+      recipe: { dishName: selectedDish, language, people: prefilledData?.servings || 2, notes: prefilledData?.notes || '', ingredients, recipeSteps: steps, nutritionInfo },
+      currentStepIndex, deadline, timerOwnerIndex,
+    });
+  }, [stateRestored, finished, isLoading, recipeError, user?.uid, selectedDish, language, prefilledData, ingredients, steps, nutritionInfo, currentStepIndex, deadline, timerOwnerIndex]);
 
-    const stateToPersist = {
-      selectedDish,
-      language,
-      prefilledData,
-      timestamp: Date.now(),
-    };
-
-    sessionStorage.setItem('chefspeak_assistant_state', JSON.stringify(stateToPersist));
-  }, [selectedDish, language, prefilledData, stateRestored]);
+  const finishCooking = () => {
+    clearCookingSession(user?.uid);
+    setFinished(true);
+    stopTimer();
+    ttsService.stop();
+    toast.success('Cooking finished. Your recipe is still available below.');
+  };
 
   // ✅ CLEANUP: Stop audio when component unmounts
   useEffect(() => {
@@ -482,7 +489,7 @@ export default function Assistant() {
                     <button
                       type="button"
                       onClick={() => {
-                        startTimer(0);
+                        stopTimer();
                         setTimerOwnerIndex(null);
                       }}
                       className="inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium
@@ -492,7 +499,7 @@ export default function Assistant() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => startTimer(remaining + 60)}
+                      onClick={addMinute}
                       className="inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium
                                  bg-amber-50 text-amber-800 hover:bg-amber-100 active:bg-amber-200"
                     >
@@ -505,6 +512,9 @@ export default function Assistant() {
           ))}
         </div>
 
+        {!isLoading && steps.length > 0 && !finished && (
+          <button type="button" onClick={finishCooking} className="my-6 px-5 py-3 rounded-xl bg-emerald-600 text-white font-semibold">Finish cooking</button>
+        )}
         <NavigationControls
           onBack={handleNavigateBack}
           onRepeat={handleRepeat}

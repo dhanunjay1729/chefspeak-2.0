@@ -1,55 +1,49 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from 'react';
+import { secondsUntil } from '../utils/cookingSession';
+import { toast } from '../contexts/ToastContext';
 
 export function useTimer() {
+  const [deadline, setDeadline] = useState(null);
   const [remaining, setRemaining] = useState(null);
-  const timerRef = useRef(null);
 
-  const startTimer = useCallback((seconds) => {
-    console.log("⏱️ startTimer called with seconds:", seconds);
-    
-    if (!seconds || seconds <= 0) {
-      console.error("❌ Invalid timer duration:", seconds);
+  useEffect(() => {
+    if (deadline === null) {
+      setRemaining(null);
       return;
     }
-    
-    if (timerRef.current) {
-      console.log("🛑 Clearing existing timer:", timerRef.current);
-      clearInterval(timerRef.current);
-    }
-    
-    console.log("🎯 Setting remaining time to:", seconds);
-    setRemaining(seconds);
-    
-    console.log("🚀 Starting new timer interval");
-    timerRef.current = setInterval(() => {
-      setRemaining((prev) => {
-        console.log("⏰ Timer callback - prev value:", prev);
-        
-        if (prev === null || prev <= 1) {
-          console.log("🔔 Timer finished! Clearing interval");
-          clearInterval(timerRef.current);
-          if (prev === 1) {
-            alert("⏱️ Time's up!");
-          }
-          return null;
-        }
-        
-        const newValue = prev - 1;
-        console.log("⏰ Timer decremented to:", newValue);
-        return newValue;
-      });
-    }, 1000);
-    
-    console.log("✅ Timer interval created with ID:", timerRef.current);
-  }, []);
+    let notified = false;
+    const tick = () => {
+      if (notified) return;
+      const seconds = secondsUntil(deadline);
+      setRemaining(seconds);
+      if (seconds === 0) {
+        notified = true;
+        setDeadline(null);
+        toast.info("Timer finished. Check your dish.");
+      }
+    };
+    tick();
+    const interval = setInterval(tick, 250);
+    document.addEventListener('visibilitychange', tick);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', tick);
+    };
+  }, [deadline]);
 
   const stopTimer = useCallback(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+    setDeadline(null);
     setRemaining(null);
   }, []);
-
-  return { remaining, startTimer, stopTimer };
+  const startTimer = useCallback((seconds) => {
+    if (!Number.isFinite(Number(seconds)) || Number(seconds) <= 0) return;
+    setDeadline(Date.now() + Number(seconds) * 1000);
+    setRemaining(Number(seconds));
+  }, []);
+  const restoreTimer = useCallback((savedDeadline) => {
+    setDeadline(Number.isFinite(savedDeadline) ? savedDeadline : null);
+    setRemaining(secondsUntil(savedDeadline));
+  }, []);
+  const addMinute = useCallback(() => setDeadline(value => value === null ? null : value + 60000), []);
+  return { remaining, deadline, startTimer, stopTimer, restoreTimer, addMinute };
 }

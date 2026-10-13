@@ -1,3 +1,4 @@
+import { readCookingSession, writeCookingSession, clearCookingSession } from '../utils/cookingSession';
 // src/pages/RecipeView.jsx
 import { useEffect, useRef, useState, Fragment } from "react";
 import { useAuth } from "../contexts/AuthContext";
@@ -33,7 +34,8 @@ export default function RecipeView() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [nutritionInfo, setNutritionInfo] = useState(null);
 
-  const { remaining, startTimer } = useTimer();
+  const { remaining, deadline, startTimer, stopTimer, restoreTimer, addMinute } = useTimer();
+  const [finished, setFinished] = useState(false);
   
   // ✅ Create TTS instance ONCE using useRef (persists across re-renders)
   const ttsService = useRef(new TTSService()).current;
@@ -64,6 +66,13 @@ export default function RecipeView() {
       try {
         const recipeData = await getDishById(user.uid, recipeId);
         if (recipeData) {
+          const session = readCookingSession(user.uid);
+          if (session?.path === `/recipe/${recipeId}`) {
+            setCurrentStepIndex(session.currentStepIndex);
+            restoreTimer(session.deadline);
+            setTimerOwnerIndex(session.timerOwnerIndex);
+            firstStepSpokenRef.current = true;
+          }
           setRecipe(recipeData);
           setSteps(recipeData.recipeSteps || []);
           setIngredients(recipeData.ingredients || []); // ✅ Load ingredients
@@ -81,7 +90,21 @@ export default function RecipeView() {
     };
 
     loadRecipe();
-  }, [user?.uid, recipeId]);
+  }, [user?.uid, recipeId, restoreTimer]);
+
+  useEffect(() => {
+    if (loading || !recipe || !steps.length || finished) return;
+    writeCookingSession(user?.uid, {
+      path: `/recipe/${recipeId}`, recipe, currentStepIndex, deadline, timerOwnerIndex,
+    });
+  }, [loading, recipe, steps.length, finished, user?.uid, recipeId, currentStepIndex, deadline, timerOwnerIndex]);
+
+  const finishCooking = () => {
+    clearCookingSession(user?.uid);
+    setFinished(true);
+    stopTimer();
+    ttsService.stop();
+  };
 
   // Speak first step when loaded
   useEffect(() => {
@@ -340,7 +363,6 @@ export default function RecipeView() {
             <FavoriteButton 
               recipe={recipe}
               className="w-full justify-center"
-              onFavoriteChange={(favorited) => {}}
             />
           </div>
         )}
@@ -373,7 +395,7 @@ export default function RecipeView() {
                     <button
                       type="button"
                       onClick={() => {
-                        startTimer(0);
+                        stopTimer();
                         setTimerOwnerIndex(null);
                       }}
                       className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold
@@ -383,7 +405,7 @@ export default function RecipeView() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => startTimer(remaining + 60)}
+                      onClick={addMinute}
                       className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold
                                  bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50 active:bg-amber-200 transition-colors shadow-sm"
                     >
@@ -403,6 +425,7 @@ export default function RecipeView() {
         </div>
 
         {/* Navigation Controls */}
+        {!finished && <button type="button" onClick={finishCooking} className="my-6 px-5 py-3 rounded-xl bg-emerald-600 text-white font-semibold">Finish cooking</button>}
         <NavigationControls
           onBack={handleNavigateBack}
           onRepeat={handleRepeat}

@@ -1,3 +1,4 @@
+import { readCookingSession } from '../utils/cookingSession';
 // src/pages/Dashboard.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
@@ -81,6 +82,7 @@ export default function Dashboard() {
   const currentUser = authCtx.currentUser ?? authCtx.user ?? null;
   const { displayName, dietType, allergies, dislikes } = useUserProfile();
   const navigate = useNavigate();
+  const cookingSession = readCookingSession(currentUser?.uid);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState({});
@@ -238,6 +240,14 @@ export default function Dashboard() {
             What's on the menu today?
           </p>
         </header>
+
+        {cookingSession && (
+          <section className="rounded-3xl border border-amber-200 dark:border-amber-900 p-6 bg-amber-50 dark:bg-amber-950/30">
+            <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Continue cooking</h2>
+            <p className="my-2 text-zinc-600 dark:text-zinc-300">{cookingSession.recipe.dishName} · Step {cookingSession.currentStepIndex + 1} of {cookingSession.recipe.recipeSteps.length}</p>
+            <button onClick={() => navigate(cookingSession.path)} className="rounded-xl px-5 py-2 bg-amber-600 text-white font-semibold">Resume recipe</button>
+          </section>
+        )}
 
         {/* Actions Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 relative z-10">

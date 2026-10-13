@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { GeminiService } from '../services/geminiService';
 import { RecipeParser } from '../utils/recipeParser';
 import { readRecipeStream } from '../utils/sse';
@@ -63,6 +63,17 @@ export function useRecipe() {
     }
   };
 
+  const restoreRecipe = useCallback((recipe, index = 0) => {
+    requestId.current++;
+    setIngredients(recipe.ingredients || '');
+    setSteps(recipe.recipeSteps || []);
+    setNutritionInfo(recipe.nutritionInfo || null);
+    setCurrentStepIndex(index);
+    setIsLoading(false);
+    setIsLoadingNutrition(false);
+    setError(null);
+  }, []);
+
   const navigateToStep = (index) => {
     const next = Math.max(0, Math.min(index, steps.length - 1));
     setCurrentStepIndex(next);
@@ -72,7 +83,7 @@ export function useRecipe() {
     steps, ingredients, currentStepIndex, nutritionInfo, isLoading, isLoadingNutrition, error,
     hasIngredients: Boolean(ingredients), ingredientsComplete: Boolean(ingredients),
     isLoadingIngredients: isLoading && !ingredients,
-    fetchRecipeSteps, navigateToStep,
+    fetchRecipeSteps, navigateToStep, restoreRecipe,
     handleNext: () => navigateToStep(currentStepIndex + 1),
     handleBack: () => navigateToStep(currentStepIndex - 1),
   };
