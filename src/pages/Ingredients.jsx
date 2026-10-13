@@ -1,5 +1,6 @@
+import { useUserProfile } from '../hooks/useUserProfile';
 // src/pages/Ingredients.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import { Button } from "../components/ui/button";
@@ -19,6 +20,17 @@ import {
 import { GeminiService } from "../services/geminiService";
 import { toast } from "../contexts/ToastContext";
 
+const STAPLES = ['water', 'oil', 'salt', 'cumin', 'turmeric', 'chilli powder', 'black pepper'];
+const readList = key => {
+  try {
+    const value = JSON.parse(localStorage.getItem(key));
+    return Array.isArray(value) ? value.filter(item => typeof item === 'string') : [];
+  } catch { return []; }
+};
+const saveList = (key, value) => {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* Storage may be disabled. */ }
+};
+
 const QUICK = [
   "onion",
   "tomato",
@@ -37,34 +49,25 @@ const QUICK = [
 
 export default function IngredientsPage() {
   const navigate = useNavigate();
+  const { dietType, allergies, dislikes, skillLevel, preferredLanguage, loading: profileLoading } = useUserProfile();
+  const preferenceKey = JSON.stringify({ dietType, allergies, dislikes, skillLevel, preferredLanguage });
+  const requestId = useRef(0);
+  const [staples, setStaples] = useState(() => readList('chefspeak.staples'));
   const [value, setValue] = useState("");
-  const [ingredients, setIngredients] = useState([]);
+  const [ingredients, setIngredients] = useState(() => readList('chefspeak.pantry'));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
 
   useEffect(() => {
-    const saved = localStorage.getItem("chefspeak.pantry");
-    if (saved) {
-      try {
-        const arr = JSON.parse(saved);
-        if (Array.isArray(arr)) setIngredients(arr);
-      } catch {}
-    }
-  }, []);
-
-  // Load suggestions from localStorage on mount
-  useEffect(() => {
-    const savedSuggestions = localStorage.getItem("chefspeak.suggestions");
-    if (savedSuggestions) {
-      try {
-        const parsed = JSON.parse(savedSuggestions);
-        if (Array.isArray(parsed)) {
-          setSuggestions(parsed);
-        }
-      } catch {}
-    }
-  }, []);
+    saveList('chefspeak.pantry', ingredients);
+    saveList('chefspeak.staples', staples);
+    requestId.current++;
+    setSuggestions([]);
+    setError(null);
+    setLoading(false);
+  }, [ingredients, staples, preferenceKey]);
+  useEffect(() => () => { requestId.current++; }, []);
 
   const normalizedSet = useMemo(
     () =>
@@ -82,7 +85,7 @@ export default function IngredientsPage() {
       .map((s) => s.toLowerCase().trim())
       .filter(Boolean);
     const uniq = [...new Set(parts)];
-    const merged = [...normalizedSet, ...uniq].map((x) => x);
+    const merged = [...new Set([...normalizedSet, ...uniq])];
     setIngredients(merged);
     setValue("");
   };
@@ -101,51 +104,31 @@ export default function IngredientsPage() {
   };
 
   const onGetSuggestions = async () => {
-    if (ingredients.length === 0) return;
+    if (!ingredients.length || profileLoading) return;
+    const id = ++requestId.current;
     setLoading(true);
     setError(null);
     try {
       const svc = new GeminiService();
-      const resp = await svc.suggestRecipesByIngredients(ingredients);
-      const list = (Array.isArray(resp) ? resp : [])
-        .slice(0, 5)
-        .map((r, i) =>
-          typeof r === "string"
-            ? { name: r }
-            : {
-                name: r?.name || r?.title || "",
-              }
-        )
-        .filter((x) => x.name);
-
-      if (list.length === 0) {
-        setError("No recipe suggestions could be generated for these ingredients. Try adding more common pantry staples.");
-      } else {
-        setSuggestions(list);
-        localStorage.setItem(
-          "chefspeak.pantry",
-          JSON.stringify(ingredients)
-        );
-      }
-    } catch (err) {
-      console.error("Ingredients suggestion error:", err);
-      setError("Unable to generate suggestions. Please verify your connection or try again.");
-      toast.error("Failed to fetch recipe suggestions.");
+      const list = await svc.suggestRecipesByIngredients(ingredients, staples, { dietType, allergies, dislikes, skillLevel }, preferredLanguage);
+      if (id !== requestId.current) return;
+      if (!list.length) setError('No suitable dishes found. Try adding more ingredients.');
+      else setSuggestions(list);
+    } catch {
+      if (id !== requestId.current) return;
+      setError('Unable to generate suggestions. Please check your connection and try again.');
+      toast.error('Failed to fetch recipe suggestions.');
     } finally {
-      setLoading(false);
+      if (id === requestId.current) setLoading(false);
     }
   };
 
-  const openDish = (name) => {
-    // Save current suggestions to localStorage before navigating
-    localStorage.setItem(
-      "chefspeak.suggestions",
-      JSON.stringify(suggestions)
-    );
-    
+  const openDish = (suggestion) => {
     const qs = new URLSearchParams({
-      dish: name,
-      ingredients: ingredients.join(", "),
+      dish: suggestion.name,
+      ingredients: [...ingredients, ...staples].join(', '),
+      required: suggestion.requiredIngredients.join(', '),
+      optional: suggestion.optionalIngredients.join(', '),
     }).toString();
     navigate(`/assistant?${qs}`);
   };
@@ -170,7 +153,7 @@ export default function IngredientsPage() {
             </h1>
             <p className="text-zinc-600 dark:text-zinc-400">
               Add what you have. ChefSpeak will suggest{" "}
-              <span className="font-medium">5 dish ideas</span> instantly.
+              <span className="font-medium">dish ideas and any missing ingredients</span>.
             </p>
           </section>
 
@@ -259,11 +242,21 @@ export default function IngredientsPage() {
                 </div>
               </div>
 
+              <fieldset className="pt-3 border-t border-zinc-200 dark:border-zinc-800">
+                <legend className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Staples I have</legend>
+                <p className="text-xs text-zinc-500 mb-3">Select what is available. We remember your choices on this device.</p>
+                <div className="flex flex-wrap gap-3">
+                  {STAPLES.map(staple => <label key={staple} className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+                    <input type="checkbox" checked={staples.includes(staple)} onChange={event => setStaples(current => event.target.checked ? [...current, staple] : current.filter(value => value !== staple))} />
+                    {staple}
+                  </label>)}
+                </div>
+              </fieldset>
               {/* CTA */}
               <div className="pt-2">
                 <Button
                   onClick={onGetSuggestions}
-                  disabled={!hasAny || loading}
+                  disabled={!hasAny || loading || profileLoading}
                   className="w-full h-12 text-base gap-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 transition-all font-semibold shadow-md border-0"
                 >
                   {loading ? (
@@ -274,7 +267,7 @@ export default function IngredientsPage() {
                   ) : (
                     <>
                       <Sparkles size={18} />
-                      Get 5 Suggestions
+                      Find dishes
                     </>
                   )}
                 </Button>
@@ -315,11 +308,11 @@ export default function IngredientsPage() {
             ) : !loading && suggestions.length === 0 ? (
               <div className="rounded-3xl border border-dashed border-zinc-300 dark:border-zinc-800 bg-white/60 dark:bg-zinc-900/60 p-8 text-center text-sm text-zinc-600 dark:text-zinc-400 backdrop-blur-sm">
                 {hasAny
-                  ? "No suggestions yet. Tap 'Get 5 Suggestions' above."
+                  ? "No suggestions yet. Tap 'Find dishes' above."
                   : "Add ingredients to get ideas."}
               </div>
             ) : loading ? (
-              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <div
                     key={i}
@@ -334,15 +327,23 @@ export default function IngredientsPage() {
                 ))}
               </div>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                 {suggestions.map((s, i) => (
                   <button
                     key={s.name + i}
-                    onClick={() => openDish(s.name)}
+                    onClick={() => openDish(s)}
                     className="group relative text-left rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md dark:shadow-none dark:hover:border-zinc-700 hover:-translate-y-1 transition-all p-5 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
                   >
                     <div className="font-semibold text-lg line-clamp-2 text-zinc-900 dark:text-zinc-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
                       {s.name}
+                    </div>
+                    <div className="mt-3 space-y-2 text-sm text-zinc-600 dark:text-zinc-300">
+                      {s.estimatedMinutes && <p>About {s.estimatedMinutes} minutes</p>}
+                      <p><span className="font-semibold">Uses:</span> {s.usedIngredients.join(', ')}</p>
+                      <p className={s.missingIngredients.length ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}>
+                        <span className="font-semibold">Missing:</span> {s.missingIngredients.length ? s.missingIngredients.join(', ') : 'Nothing from the listed ingredients'}
+                      </p>
+                      {!!s.optionalIngredients.length && <p className="text-xs">Optional: {s.optionalIngredients.join(', ')}</p>}
                     </div>
                     <div className="text-xs font-medium text-zinc-500 dark:text-zinc-500 mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800/60">
                       Tap to start cooking

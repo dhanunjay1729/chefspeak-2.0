@@ -81,9 +81,13 @@ export default function Assistant() {
     const ingredientsFromUrl = searchParams.get('ingredients');
     
     if (dishFromUrl) {
-      const notes = ingredientsFromUrl 
-        ? `Use these ingredients: ${ingredientsFromUrl}`
-        : '';
+      const required = searchParams.get('required');
+      const optional = searchParams.get('optional');
+      const notes = [
+        ingredientsFromUrl ? `Available ingredients: ${ingredientsFromUrl}.` : '',
+        required ? `Use this dish plan's required ingredients: ${required}. Do not introduce other required ingredients.` : '',
+        optional ? `Optional garnishes (omit if unavailable): ${optional}.` : '',
+      ].filter(Boolean).join(' ');
       
       setPrefilledData({
         dishName: dishFromUrl,

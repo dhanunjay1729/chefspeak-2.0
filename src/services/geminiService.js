@@ -97,9 +97,9 @@ export class GeminiService {
   }
 
   // ✅ ADD THIS METHOD: Suggest recipes based on ingredients
-  async suggestRecipesByIngredients(ingredients) {
+  async suggestRecipesByIngredients(ingredients, staples = [], userPreferences = {}, language = "English") {
     const url = `${this.baseURL}/api/recipe/suggest-by-ingredients`;
-    const payload = { ingredients };
+    const payload = { ingredients, staples, userPreferences, language };
 
     const response = await this.fetchWithRetry(url, {
       method: 'POST',

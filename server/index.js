@@ -1,3 +1,4 @@
+import { normalizeSuggestions } from './pantry.js';
 import { sanitizeNutrition } from './nutrition.js';
 import express from 'express';
 import cors from 'cors';
@@ -414,47 +415,32 @@ app.get('/api/search', async (req, res) => {
 
 // Recipe suggestions by ingredients endpoint with fallback & retry
 app.post('/api/recipe/suggest-by-ingredients', async (req, res) => {
-  const { ingredients } = req.body;
-
-  if (!ingredients || !Array.isArray(ingredients) || ingredients.length === 0) {
-    return res.status(400).json({ error: 'Ingredients array required' });
+  const { ingredients, staples = [], userPreferences = {}, language = 'English' } = req.body;
+  const validList = list => Array.isArray(list) && list.length <= 50 && list.every(value => typeof value === 'string' && value.trim() && value.length <= 100);
+  if (!validList(ingredients) || !ingredients.length || !validList(staples)) {
+    return res.status(400).json({ error: 'Provide a list of ingredients and confirmed staples' });
   }
-
+  const available = [...new Set([...ingredients, ...staples].map(value => value.trim()))];
   try {
-    const ingredientList = ingredients.join(', ');
-
-    const completion = await callWithFallback(async (model) => {
-      return await ai.models.generateContent({
-        model,
-        contents: `Suggest 5 dishes I can make with these ingredients: ${ingredientList}`,
-        config: {
-          systemInstruction: 'You are a helpful cooking assistant. Suggest 5 dish names that can be made with the given ingredients. Return ONLY a JSON array of dish names, nothing else. Format: ["Dish 1", "Dish 2", "Dish 3", "Dish 4", "Dish 5"]',
-          temperature: 0.7,
-          maxOutputTokens: 200,
-          responseMimeType: "application/json",
-        }
-      });
-    });
-
-    const parsed = cleanAndParseJson(completion.text, []);
-    let suggestions = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.suggestions) ? parsed.suggestions : []);
-
-    if (suggestions.length === 0) {
-      suggestions = (completion.text || '')
-        .split('\n')
-        .map(line => line.replace(/^\d+\.\s*/, '').replace(/^-\s*/, '').replace(/["\[\]]/g, '').trim())
-        .filter(line => line.length > 0)
-        .slice(0, 5);
-    }
-
-    if (suggestions.length === 0) {
-      suggestions = [`${ingredients[0]} Stir Fry`, `${ingredients.slice(0, 2).join(' & ')} Medley`, 'Homestyle Sauté', 'Comfort Stew', 'Quick Pan Toss'];
-    }
-
-    res.json({ suggestions: suggestions.slice(0, 5) });
+    const prompt = `Suggest up to 5 dishes using these available ingredients: ${JSON.stringify(available)}.
+Only these ingredients are known to be available. Do not assume oil, salt, spices, or any other staples.
+Prefer dishes needing no additional ingredients; otherwise list ALL missing required ingredients, including seasoning and cooking oil.
+Use the exact supplied ingredient names when referencing available items. Required ingredients must include everything necessary to cook the dish. Keep optional garnishes separate.
+Diet: ${userPreferences.dietType || 'nonveg'} (veg excludes meat, fish and eggs; vegan excludes all animal products).
+Exclude allergens: ${JSON.stringify(userPreferences.allergies || [])}. Avoid dislikes: ${JSON.stringify(userPreferences.dislikes || [])}.
+Skill: ${userPreferences.skillLevel || 'beginner'}. Dish names should be in ${language}; ingredient names must remain in the same language as the input.
+Return strict JSON: {"suggestions":[{"name":"Dish name","estimatedMinutes":25,"requiredIngredients":["rice","oil"],"optionalIngredients":["coriander"]}]}. Return only realistic dishes with approximate total cooking time. Do not claim a dish is allergen-safe.`;
+    const completion = await callWithFallback(model => ai.models.generateContent({
+      model, contents: prompt,
+      config: { responseMimeType: 'application/json', temperature: 0.3 },
+    }));
+    const parsed = cleanAndParseJson(completion.text, {});
+    const suggestions = normalizeSuggestions(parsed.suggestions, available);
+    if (!suggestions.length) throw new Error('No usable suggestions returned');
+    res.json({ suggestions });
   } catch (error) {
-    console.error('Error generating ingredient suggestions:', error);
-    res.json({ suggestions: [`${ingredients[0]} Stir Fry`, 'Homestyle Sauté', 'Comfort Stew'] });
+    console.error('Ingredient suggestions failed:', error.message);
+    res.status(503).json({ error: 'Unable to suggest dishes. Please try again.' });
   }
 });
 
