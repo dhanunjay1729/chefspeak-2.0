@@ -4,14 +4,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { ChefHat, Menu, Settings, LogOut, User, SlidersHorizontal, X, Home, BookOpen, Heart, HelpCircle, Moon, Sun } from "lucide-react"; 
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
-import { WelcomeTooltip } from "./WelcomeTooltip"; 
 
 export default function Header() {
   const navigate = useNavigate();
   const { logout, user } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [showWelcomeTooltip, setShowWelcomeTooltip] = useState(false);
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -23,34 +21,7 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", onClickAway);
   }, []);
 
-  // ✅ Check if user is new (first time after signup)
-  useEffect(() => {
-    if (user) {
-      const hasSeenWelcome = localStorage.getItem(`welcome_seen_${user.uid}`);
-      if (!hasSeenWelcome) {
-        // Show tooltip after a short delay
-        setTimeout(() => {
-          setShowWelcomeTooltip(true);
-        }, 1000);
-      }
-    }
-  }, [user]);
-
-  // ✅ Mark welcome as seen
-  const handleCloseTooltip = () => {
-    if (user) {
-      localStorage.setItem(`welcome_seen_${user.uid}`, 'true');
-    }
-    setShowWelcomeTooltip(false);
-  };
-
-  const toggleMenu = () => {
-    setMenuOpen((prev) => !prev);
-    // Close tooltip when menu is opened
-    if (showWelcomeTooltip) {
-      handleCloseTooltip();
-    }
-  };
+  const toggleMenu = () => setMenuOpen((open) => !open);
 
   const handleLogout = async () => {
     try {
@@ -157,16 +128,8 @@ export default function Header() {
           >
             {menuOpen ? <X size={24} /> : <Menu size={24} />}
             
-            {/* ✅ Pulsing indicator when tooltip should show */}
-            {showWelcomeTooltip && !menuOpen && (
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-fuchsia-500 to-amber-500 rounded-full animate-ping" />
-            )}
           </button>
 
-          {/* ✅ Welcome Tooltip */}
-          {showWelcomeTooltip && !menuOpen && (
-            <WelcomeTooltip onClose={handleCloseTooltip} />
-          )}
         </div>
       </div>
 

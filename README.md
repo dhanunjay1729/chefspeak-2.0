@@ -1,20 +1,20 @@
 <div align="center">
 
-# ChefSpeak
+# 🍳 ChefSpeak
 
-### Your cooking companion, one step at a time.
+### Less scrolling. More cooking.
 
-AI recipes, voice guidance, and meal ideas from the ingredients you already have.
+A recipe that speaks your language. A meal made from what you have.
 
-[Try ChefSpeak](https://chefspeak.vercel.app) · [Report an issue](https://github.com/dhanunjay1729/chefspeak-2.0/issues)
+[Start cooking →](https://chefspeak.vercel.app) · [Report an issue](https://github.com/dhanunjay1729/chefspeak-2.0/issues)
 
 </div>
 
 <table align="center">
   <tr>
-    <th align="center">Cook, step by step</th>
-    <th align="center">Use what you have</th>
-    <th align="center">Pick up where you left off</th>
+    <th align="center">🔊 Cook, step by step</th>
+    <th align="center">🥕 Use what you have</th>
+    <th align="center">⏯️ Pick up where you left off</th>
   </tr>
   <tr>
     <td width="33%" align="center" valign="top"><img src="docs/screenshots/cooking-assistant.jpg" alt="Phone layout: recipe step with a timer, voice playback, and Back, Repeat, and Next controls" width="240" /></td>
@@ -25,17 +25,33 @@ AI recipes, voice guidance, and meal ideas from the ingredients you already have
 
 <p align="center"><sub>ChefSpeak on a phone · Actual app screenshots at 375 × 812</sub></p>
 
-## From an idea to a meal
+## ✨ From an idea to a meal
 
-**Find your next dish.** Enter a dish name, choose your servings, and add a few notes. ChefSpeak generates ingredients and step-by-step instructions, taking your saved dietary preferences and cooking experience into account.
+**🤖 Your idea, a complete recipe.** Name a dish, choose your servings, and add your notes. Get ingredients and cooking steps shaped by your preferences and skill level.
 
-**Keep your hands on the cooking.** Listen to instructions in your preferred language, repeat a step, and start timers directly from the recipe. Ingredient checklists help you keep track as you prepare.
+**🔊 Listen. Cook. Repeat.** Hear each step in your preferred language, replay it when you need to, and start a timer right from the instructions. Check off ingredients as you prep.
 
-**Use what you have.** Add ingredients and confirm your pantry staples. Get dish suggestions showing what you can use, what is missing, optional extras, and estimated cooking time.
+**🥕 A little pantry inspiration.** Add your ingredients and staples. Discover dishes with cooking times and a clear list of what you have, what is missing, and what is optional.
 
-## Make it your kitchen
+## 🎛️ Make it your kitchen
 
-- **Personal preferences:** Set your language, dietary type, allergies, ingredient dislikes, and skill level.
+<table>
+  <tr>
+    <td width="40%" align="center" valign="top">
+      <img src="docs/screenshots/settings.png" alt="ChefSpeak phone settings showing preferred language, cooking skill, diet preference, allergies, and ingredient dislikes in dark mode" width="260" />
+    </td>
+    <td valign="top">
+      <h3>Your taste. Your pace. Your language.</h3>
+      <p>Personalize the guidance before you start cooking.</p>
+      <p><strong>🌍 Speak your language</strong><br />Choose the language for recipes and voice guidance.</p>
+      <p><strong>🧑‍🍳 Cook at your level</strong><br />Set your experience, from beginner to pro.</p>
+      <p><strong>🥗 Choose your diet</strong><br />Vegetarian, vegan, or non-vegetarian.</p>
+      <p><strong>🎛️ Fine-tune your ingredients</strong><br />Add allergies and dislikes to guide recipe generation. Always check generated ingredients before cooking.</p>
+      <p><sub>Phone settings screenshot provided by the creator, shown in dark mode.</sub></p>
+    </td>
+  </tr>
+</table>
+
 - **Favorites and discovery:** Sign in to save dishes, revisit recipe history, and get recommendations based on your favorites.
 - **Continue cooking:** Resume a recipe on the same device with your current step, checked ingredients, and timer deadlines preserved.
 - **Cooking notes:** Remember your adjustments for next time, with account notes saved with recipes and guest notes kept on the device.
@@ -44,7 +60,7 @@ AI recipes, voice guidance, and meal ideas from the ingredients you already have
 
 Recipes, suggestions, and nutrition are AI-generated. Check ingredients against your dietary needs; nutrition values are estimates. Timer alerts depend on the browser remaining active.
 
-## Built with
+## 🛠️ Built with
 
 | Layer | Technology |
 | --- | --- |
@@ -55,11 +71,11 @@ Recipes, suggestions, and nutrition are AI-generated. Check ingredients against 
 | API | Node.js · Express |
 | Hosting | Vercel · Render |
 
-## Contributing
+## 🤝 Contributing
 
 Have an idea or found a bug? [Open an issue](https://github.com/dhanunjay1729/chefspeak-2.0/issues) or send a pull request. For code changes, run `npm test` and `npm run build` before submitting.
 
-## License
+## 📄 License
 
 [CC BY-NC-SA 4.0](LICENSE) — attribution required, non-commercial use only, and adaptations must use the same license.
 

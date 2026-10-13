@@ -4,6 +4,7 @@ import { Suspense, lazy, useEffect } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ToastProvider } from "./contexts/ToastContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import WelcomePreferences from "./components/WelcomePreferences";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import RedirectIfAuthed from "./routes/RedirectIfAuthed";
 import { AnalyticsService } from "./services/analyticsService"; // ✅ Import
@@ -54,6 +55,7 @@ function App() {
       <ThemeProvider>
       <AuthProvider>
         <ToastProvider>
+          <WelcomePreferences />
           <AnalyticsTracker /> {/* ✅ Track page views */}
           <Suspense fallback={<div>Loading…</div>}>
           <Routes>
