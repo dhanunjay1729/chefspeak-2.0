@@ -24,15 +24,23 @@ export function useRecipe() {
     setCurrentStepIndex(0);
     setNutritionInfo(null);
     setError(null);
-    const assembler = createRecipeAssembler(recipe => {
+    const newAssembler = () => createRecipeAssembler(recipe => {
       if (active()) {
         setIngredients(recipe.ingredients);
         setSteps(recipe.steps);
       }
     });
+    let assembler = newAssembler();
     try {
       const response = await service.fetchRecipeSteps(dish, people, extraNotes, language, userPreferences, { outputFormat: 'structured' });
-      await readRecipeStream(response.body, content => assembler.append(content));
+      await readRecipeStream(response.body, content => assembler.append(content), () => {
+        assembler = newAssembler();
+        if (active()) {
+          setIngredients('');
+          setSteps([]);
+          setCurrentStepIndex(0);
+        }
+      });
       const recipe = assembler.finish();
       if (!active()) return;
       setIsLoading(false);

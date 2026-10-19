@@ -1,5 +1,5 @@
 // Network chunks can split anywhere, including inside JSON or a UTF-8 character.
-export async function readRecipeStream(body, onContent) {
+export async function readRecipeStream(body, onContent, onReset = () => {}) {
   if (!body) throw new Error('Recipe response has no stream');
   const reader = body.getReader();
   const decoder = new TextDecoder();
@@ -12,6 +12,7 @@ export async function readRecipeStream(body, onContent) {
     if (data === '[DONE]') { completed = true; return; }
     const parsed = JSON.parse(data);
     if (parsed.error) throw new Error(parsed.error);
+    if (parsed.reset === true) { onReset(); return; }
     if (typeof parsed.content === 'string') onContent(parsed.content);
   };
   try {

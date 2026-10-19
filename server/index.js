@@ -1,4 +1,5 @@
 import { recipeSchema } from './recipeSchema.js';
+import { createModelFallback } from './modelFallback.js';
 import { normalizeSuggestions } from './pantry.js';
 import { sanitizeNutrition } from './nutrition.js';
 import express from 'express';
@@ -24,53 +25,7 @@ const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
 
-// ✅ Model Cascade for High Availability & Fault Tolerance
-// Primary: gemini-3.1-flash-lite (Ultra-fast TTFT ~2s, highest quota efficiency)
-// Fallback 1: gemini-3.6-flash (High reasoning, unblocked compute pool)
-// Fallback 2: gemini-3.5-flash (Proven high-intelligence workhorse)
-const MODELS_CASCADE = [
-  'gemini-3.1-flash-lite',
-  'gemini-3.6-flash',
-  'gemini-3.5-flash',
-];
-
-function isRetryableError(err) {
-  if (!err) return false;
-  if (err.status === 503 || err.status === 429) return true;
-  const msg = (err.message || '').toLowerCase();
-  return (
-    msg.includes('503') ||
-    msg.includes('429') ||
-    msg.includes('high demand') ||
-    msg.includes('quota') ||
-    msg.includes('resource_exhausted') ||
-    msg.includes('unavailable') ||
-    msg.includes('rate limit') ||
-    msg.includes('overloaded') ||
-    msg.includes('fetch failed')
-  );
-}
-
-// Call non-streaming models with fallback cascade and backoff jitter
-async function callWithFallback(generateFn) {
-  let lastError = null;
-  for (const model of MODELS_CASCADE) {
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      try {
-        return await generateFn(model);
-      } catch (err) {
-        lastError = err;
-        console.warn(`[AI] Model ${model} (attempt ${attempt}) failed:`, err.message?.slice(0, 100));
-        if (attempt === 1 && isRetryableError(err)) {
-          await new Promise((r) => setTimeout(r, 1200 + Math.random() * 600));
-          continue;
-        }
-        break; // Switch to next model in cascade
-      }
-    }
-  }
-  throw lastError;
-}
+const modelService = createModelFallback({ ai });
 
 // Robust JSON cleaner & parser that handles markdown fences and partial text
 function cleanAndParseJson(rawText, fallback = {}) {
@@ -215,51 +170,21 @@ app.post('/api/recipe/steps', async (req, res) => {
       systemInstruction = `You are a multilingual professional chef assistant. Output only cooking steps, numbered, in ${language}. Always respect dietary restrictions and allergies. Each numbered step must be on its own line.`;
     }
 
-    let activeStream = null;
-
-    // Multi-model streaming fallback
-    for (const model of MODELS_CASCADE) {
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        try {
-          const stream = await ai.models.generateContentStream({
-            model,
-            contents: prompt,
-            config: {
-              systemInstruction,
-              temperature: 0.4,
-              ...(outputFormat === "structured" ? { responseMimeType: "application/json", responseJsonSchema: recipeSchema } : {}),
-            }
-          });
-          activeStream = stream;
-          break;
-        } catch (streamErr) {
-          console.warn(`[Steps] Model fallback triggered:`, streamErr.message?.slice(0, 60));
-          if (attempt === 1 && isRetryableError(streamErr)) {
-            await new Promise(r => setTimeout(r, 1200 + Math.random() * 500));
-            continue;
-          }
-          break; // Switch to next model in cascade
-        }
+    const stream = modelService.stream({
+      contents: prompt,
+      config: {
+        systemInstruction,
+        temperature: 0.4,
+        ...(outputFormat === 'structured' ? { responseMimeType: 'application/json', responseJsonSchema: recipeSchema } : {}),
+      },
+    });
+    for await (const event of stream) {
+      if (!res.headersSent) {
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
       }
-      if (activeStream) break;
-    }
-
-    if (!activeStream) {
-      throw new Error('All recipe generation models are temporarily busy. Please try again in a few seconds.');
-    }
-
-    // Setup SSE headers only after stream is established
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-
-    for await (const chunk of activeStream) {
-      let content = chunk.text || '';
-      if (content) {
-        // Strict format guarantee: strip any markdown bold asterisks or hashes
-        content = content.replace(/\*\*/g, '').replace(/^#+\s*/gm, '');
-        res.write(`data: ${JSON.stringify({ content })}\n\n`);
-      }
+      res.write(`data: ${JSON.stringify(event)}\n\n`);
     }
 
     res.write('data: [DONE]\n\n');
@@ -289,17 +214,16 @@ app.post('/api/recipe/nutrition', async (req, res) => {
 
     const systemInstruction = `You are a multilingual professional chef assistant. Return nutrition facts strictly as a JSON object with numeric values only. Keys: "calories", "protein", "fat", "carbs".`;
 
-    const completion = await callWithFallback(async (model) => {
-      return await ai.models.generateContent({
-        model,
+    const completion = await modelService.generate({
         contents: prompt,
         config: {
           systemInstruction,
           temperature: 0.2,
           responseMimeType: "application/json",
+          maxOutputTokens: 350,
+          responseJsonSchema: { type: 'object', properties: Object.fromEntries(['calories', 'protein', 'fat', 'carbs'].map(key => [key, { type: 'number', minimum: 0 }])), required: ['calories', 'protein', 'fat', 'carbs'] },
         }
-      });
-    });
+    }, text => Boolean(sanitizeNutrition(cleanAndParseJson(text))));
 
     const parsedRaw = cleanAndParseJson(completion.text);
     const sanitized = sanitizeNutrition(parsedRaw);
@@ -351,16 +275,15 @@ app.post('/api/recipe/suggest', async (req, res) => {
       `Return exactly ${recipeCount} distinct dish names.`,
     ].join(" ");
 
-    const completion = await callWithFallback(async (model) => {
-      return await ai.models.generateContent({
-        model,
+    const completion = await modelService.generate({
         contents: user,
         config: {
           systemInstruction: sys.join(" "),
           temperature: 0.4,
           responseMimeType: "application/json",
+          maxOutputTokens: 400,
+          responseJsonSchema: { type: 'object', properties: { recipes: { type: 'array', items: { type: 'string' } } }, required: ['recipes'] },
         }
-      });
     });
 
     const parsed = cleanAndParseJson(completion.text, {});
@@ -436,10 +359,14 @@ Diet: ${userPreferences.dietType || 'nonveg'} (veg excludes meat, fish and eggs;
 Exclude allergens: ${JSON.stringify(userPreferences.allergies || [])}. Avoid dislikes: ${JSON.stringify(userPreferences.dislikes || [])}.
 Skill: ${userPreferences.skillLevel || 'beginner'}. Dish names should be in ${language}; ingredient names must remain in the same language as the input.
 Return strict JSON: {"suggestions":[{"name":"Dish name","estimatedMinutes":25,"requiredIngredients":["rice","oil"],"optionalIngredients":["coriander"]}]}. Return only realistic dishes with approximate total cooking time. Do not claim a dish is allergen-safe.`;
-    const completion = await callWithFallback(model => ai.models.generateContent({
-      model, contents: prompt,
-      config: { responseMimeType: 'application/json', temperature: 0.3 },
-    }));
+    const completion = await modelService.generate({
+      contents: prompt,
+      config: { responseMimeType: 'application/json', temperature: 0.3, maxOutputTokens: 1500,
+        responseJsonSchema: { type: 'object', properties: { suggestions: { type: 'array', items: {
+          type: 'object', properties: { name: { type: 'string' }, estimatedMinutes: { type: 'number' }, requiredIngredients: { type: 'array', items: { type: 'string' } }, optionalIngredients: { type: 'array', items: { type: 'string' } } }, required: ['name', 'estimatedMinutes', 'requiredIngredients', 'optionalIngredients'],
+        } } }, required: ['suggestions'] },
+      },
+    });
     const parsed = cleanAndParseJson(completion.text, {});
     const suggestions = normalizeSuggestions(parsed.suggestions, available);
     if (!suggestions.length) throw new Error('No usable suggestions returned');
@@ -530,16 +457,15 @@ Make sure the recommendations are distinct but share similar culinary appeal (e.
 
     prompt += ` Respond ONLY with a valid JSON array of 4 dish names strings in ${language}. Example format: ["Dish 1", "Dish 2", "Dish 3", "Dish 4"]`;
 
-    const completion = await callWithFallback(async (model) => {
-      return await ai.models.generateContent({
-        model,
+    const completion = await modelService.generate({
         contents: prompt,
         config: {
           systemInstruction: `You are a culinary recommendation engine. Output strictly JSON array of strings.`,
           temperature: 0.7,
           responseMimeType: "application/json",
+          maxOutputTokens: 400,
+          responseJsonSchema: { type: 'array', items: { type: 'string' } },
         }
-      });
     });
 
     const parsed = cleanAndParseJson(completion.text, []);
