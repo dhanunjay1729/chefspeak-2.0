@@ -1,4 +1,4 @@
-import { createRecipeAssembler } from '../src/utils/recipeData.js';
+import { createRecipeAssembler } from './recipeData.js';
 import process from 'node:process';
 import { Buffer } from 'node:buffer';
 
