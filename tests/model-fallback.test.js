@@ -61,12 +61,22 @@ test('a failed partial Gemini recipe is reset before the paid replacement reache
   const events = [];
   for await (const event of service.stream(request)) events.push(event);
   assert.equal(events.filter(e => e.reset).length, 1);
+  assert.equal(events.at(-1).model, 'openai/gpt-6-luna');
   const wire = events.map(event => `data: ${JSON.stringify(event)}\n\n`).join('') + 'data: [DONE]\n\n';
   let assembler = createRecipeAssembler();
   const body = new ReadableStream({ start(controller) { controller.enqueue(new TextEncoder().encode(wire)); controller.close(); } });
   await readRecipeStream(body, content => assembler.append(content), () => { assembler = createRecipeAssembler(); });
   assert.equal(assembler.finish().steps.length, 1);
   assert.equal(assembler.finish().ingredients[0].name, 'బియ్యం');
+});
+
+test('successful free streams report the free model and do not use Gateway', async () => {
+  const service = createModelFallback({ ai: { models: { async *generateContentStream() { yield { text: JSON.stringify(recipe) }; } } }, env,
+    fetchImpl: () => assert.fail('Paid call made'), log() {} });
+  const events = [];
+  for await (const event of service.stream(request)) events.push(event);
+  assert.equal(events.length, 1);
+  assert.equal(events[0].model, 'gemini-3.1-flash-lite');
 });
 
 test('truncated paid answers are rejected instead of being accepted as complete', async () => {

@@ -22,6 +22,8 @@ for thirty seconds. Each request tries an available free model once before movin
 on. The paid request has a 45-second timeout and a bounded output token count.
 Failed partial recipes are discarded before a replacement is displayed. Publish
 the frontend's stream-reset support with the backend change.
+Recipe SSE content events include the model ID for deployment diagnostics; no
+credentials are exposed. The app displays the recipe without showing the model ID.
 
 Validation: `npm test`, `node tests/model-fallback.test.js`, and `npm run build`.
 The focused tests cover free success without paid calls, quota cooldowns, paid

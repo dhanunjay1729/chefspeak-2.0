@@ -88,7 +88,7 @@ export function createModelFallback({ ai, env = process.env, fetchImpl = fetch, 
             if (text.length > 60000) throw new Error('Recipe is too large');
             assembler?.append(chunk.text);
             emitted = true;
-            yield { content: chunk.text };
+            yield { content: chunk.text, model };
           }
           if (!text.trim()) throw new Error('Empty recipe stream');
           assembler?.finish();
@@ -102,7 +102,7 @@ export function createModelFallback({ ai, env = process.env, fetchImpl = fetch, 
         assembler.finish();
       }
       if (emitted) yield { reset: true };
-      yield { content: result.text };
+      yield { content: result.text, model: PAID_MODEL };
     },
   };
 }
