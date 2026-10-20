@@ -20,10 +20,10 @@ import { NonVegWarningDialog } from "../components/NonVegWarningDialog";
 import { DishAnalysisService } from "../services/dishAnalysisService";
 import { addRecentDish, saveCookingNotes } from "../services/userService";
 import Header from "../components/Header"; 
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase";
-import { ChefHat, Sparkles, AlertCircle, RotateCcw } from "lucide-react";
+import { ChefHat, Sparkles, AlertCircle, RotateCcw, X } from "lucide-react";
 import { AudioControls } from "../components/AudioControls";
 import { LoadingSpinner } from "../components/LoadingSpinner"; // ✅ Import
 import { AnalyticsService } from "../services/analyticsService"; // ✅ Import
@@ -34,6 +34,8 @@ export default function Assistant() {
   const { user } = useAuth();
   const { preferredLanguage, dietType, allergies, dislikes, skillLevel, loading: profileLoading, refresh: refreshProfile } = useUserProfile();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [formKey, setFormKey] = useState(0);
   const [language, setLanguage] = useState("English");
   const [selectedDish, setSelectedDish] = useState("");
   
@@ -180,7 +182,7 @@ export default function Assistant() {
     fetchRecipeSteps(dishName, servings, notes, requestLanguage, userPreferences).then(recipe => {
       if (generation === generationRef.current && !user?.uid && recipe) setCookingNotes(readLocalCookingNotes({ dishName, ingredients: recipe.ingredients }) || '');
     }).catch(() => {
-      toast.error("Unable to generate recipe steps. Tap 'Try Again' to retry.");
+      if (generation === generationRef.current) toast.error("Unable to generate recipe steps. Tap 'Try Again' to retry.");
     });
   };
 
@@ -352,6 +354,26 @@ export default function Assistant() {
     toast.success('Cooking finished. Your recipe is still available below.');
   };
 
+  const clearRecipe = () => {
+    generationRef.current++;
+    recipeSavedRef.current = false;
+    clearCookingSession(user?.uid);
+    sessionStorage.removeItem('chefspeak_assistant_state');
+    ttsService.stop();
+    stopTimer();
+    restoreRecipe({ ingredients: '', recipeSteps: [], nutritionInfo: null });
+    setSelectedDish('');
+    setPrefilledData(null);
+    setCookingNotes('');
+    setCheckedIds([]);
+    setSavedRecipeId(null);
+    setTimerOwnerIndex(null);
+    setFinished(false);
+    firstStepSpokenRef.current = false;
+    setFormKey(value => value + 1);
+    if (searchParams.toString()) navigate('/assistant', { replace: true });
+  };
+
   // ✅ CLEANUP: Stop audio when component unmounts
   useEffect(() => {
     return () => {
@@ -379,10 +401,18 @@ export default function Assistant() {
         </h1>
 
         <RecipeForm 
+          key={formKey}
           onSubmit={handleFormSubmit} 
           isLoading={isLoading || profileLoading}
           initialData={prefilledData}
         />
+
+        {(selectedDish || isLoading || recipeError) && (
+          <button type="button" onClick={clearRecipe}
+            className="mb-6 inline-flex items-center gap-2 rounded-xl border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800">
+            <X className="h-4 w-4" /> Clear recipe
+          </button>
+        )}
 
         {/* Nutrition Info - separate */}
         {(ingredientsComplete || isLoadingNutrition) && <NutritionInfo nutritionInfo={nutritionInfo} isLoading={isLoadingNutrition} />}
