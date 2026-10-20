@@ -10,6 +10,7 @@ import Header from "../components/Header";
 import { Heart, Salad, ChefHat, Compass, X, Loader2, Sparkles, ArrowRight, Info, Lock } from "lucide-react";
 import { FullPageLoader } from "../components/LoadingSpinner";
 import { geminiService } from "../services/geminiService";
+import { getLanguage } from "../../shared/languages";
 
 function ActionTile({ icon: Icon, title, desc, onClick, variant = "default" }) {
   const base =
@@ -246,7 +247,12 @@ export default function Dashboard() {
           <section className="rounded-3xl border border-amber-200 dark:border-amber-900 p-6 bg-amber-50 dark:bg-amber-950/30">
             <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Continue cooking</h2>
             <p className="my-2 text-zinc-600 dark:text-zinc-300">{cookingSession.recipe.dishName} · Step {cookingSession.currentStepIndex + 1} of {cookingSession.recipe.recipeSteps.length}</p>
-            <button onClick={() => navigate(cookingSession.path)} className="rounded-xl px-5 py-2 bg-amber-600 text-white font-semibold">Resume recipe</button>
+            <button onClick={() => {
+              const savedLanguage = getLanguage(cookingSession.recipe.language)?.code;
+              const translatedRecipePath = cookingSession.path === '/assistant' && cookingSession.savedRecipeId &&
+                savedLanguage !== preferredLanguage ? `/recipe/${cookingSession.savedRecipeId}` : cookingSession.path;
+              navigate(translatedRecipePath);
+            }} className="rounded-xl px-5 py-2 bg-amber-600 text-white font-semibold">Resume recipe</button>
           </section>
         )}
 

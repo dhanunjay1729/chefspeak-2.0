@@ -29,4 +29,6 @@ test('a new recipe uses the saved setting even when an older cooking session use
   assert.equal(languageForNewRecipe(null, null), DEFAULT_LANGUAGE);
   assert.match(languageInstruction(getLanguage('telugu')), /Telugu in Telugu script/);
   assert.match(languageInstruction(getLanguage('telugu')), /Do not answer in English/);
+  assert.match(languageInstruction(getLanguage('telugu')), /native script/);
+  assert.doesNotMatch(languageInstruction(getLanguage('spanish')), /native script|rather than Latin/);
 });

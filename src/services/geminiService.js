@@ -54,6 +54,16 @@ export class GeminiService {
     return response;
   }
 
+  async translateRecipe(texts, language) {
+    const response = await this.fetchWithRetry(`${this.baseURL}/api/recipe/translate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texts, language }),
+    });
+    if (!response.ok) throw new Error(`Recipe translation failed: ${response.status}`);
+    return (await response.json()).translations;
+  }
+
   async fetchNutritionInfo(dish, people, extraNotes, language, userPreferences = {}, ingredients = "") {
     const url = `${this.baseURL}/api/recipe/nutrition`;
     const payload = {

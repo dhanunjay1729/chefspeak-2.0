@@ -28,11 +28,11 @@ import { AudioControls } from "../components/AudioControls";
 import { LoadingSpinner } from "../components/LoadingSpinner"; // ✅ Import
 import { AnalyticsService } from "../services/analyticsService"; // ✅ Import
 import { toast } from "../contexts/ToastContext";
-import { languageForNewRecipe } from "../../shared/languages";
+import { getLanguage, languageForNewRecipe } from "../../shared/languages";
 
 export default function Assistant() {
   const { user } = useAuth();
-  const { preferredLanguage, dietType, allergies, dislikes, skillLevel, loading: profileLoading, refresh: refreshProfile } = useUserProfile();
+  const { preferredLanguage, dietType, allergies, dislikes, skillLevel, loading: profileLoading, error: profileError, refresh: refreshProfile } = useUserProfile();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [formKey, setFormKey] = useState(0);
@@ -187,7 +187,7 @@ export default function Assistant() {
   };
 
   const handleFormSubmit = async ({ dishName, servings, notes }) => {
-    if (profileLoading) return;
+    if (profileLoading || profileError) return;
     sessionStorage.removeItem('chefspeak_assistant_state');
     
     const userPreferences = {
@@ -403,15 +403,30 @@ export default function Assistant() {
         <RecipeForm 
           key={formKey}
           onSubmit={handleFormSubmit} 
-          isLoading={isLoading || profileLoading}
+          isLoading={isLoading || profileLoading || Boolean(profileError)}
           initialData={prefilledData}
         />
+
+        {profileError && (
+          <div role="alert" className="w-full max-w-md mb-6 rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/30 p-4 text-sm text-red-800 dark:text-red-300">
+            {profileError}
+            <button type="button" onClick={refreshProfile} className="ml-2 font-semibold underline">Retry</button>
+          </div>
+        )}
 
         {(selectedDish || isLoading || recipeError) && (
           <button type="button" onClick={clearRecipe}
             className="mb-6 inline-flex items-center gap-2 rounded-xl border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800">
             <X className="h-4 w-4" /> Clear recipe
           </button>
+        )}
+
+        {steps.length > 0 && !profileLoading && !profileError && getLanguage(language)?.code !== preferredLanguage && (
+          <div className="w-full max-w-md mb-6 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 p-4 text-sm text-amber-900 dark:text-amber-200">
+            This recipe was made in {getLanguage(language)?.name || language}. New recipes will use {getLanguage(preferredLanguage)?.name}.
+            {savedRecipeId && <button type="button" onClick={() => navigate(`/recipe/${savedRecipeId}`)}
+              className="ml-2 font-semibold underline">View this recipe in {getLanguage(preferredLanguage)?.name}</button>}
+          </div>
         )}
 
         {/* Nutrition Info - separate */}

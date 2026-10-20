@@ -3,6 +3,7 @@ import { createModelFallback } from './modelFallback.js';
 import { normalizeSuggestions } from './pantry.js';
 import { sanitizeNutrition } from './nutrition.js';
 import { getLanguage, languageInstruction } from '../shared/languages.js';
+import { hasMatchingNumbers } from '../shared/recipeTranslation.js';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -203,6 +204,47 @@ app.post('/api/recipe/steps', async (req, res) => {
     } else {
       res.status(500).json({ error: error.message || 'Failed to generate recipe steps' });
     }
+  }
+});
+
+// Translate a saved recipe's displayed text. The client reapplies these strings
+// to the original recipe so ingredient IDs, quantities and timers cannot change.
+app.post('/api/recipe/translate', async (req, res) => {
+  const { language, texts } = req.body || {};
+  const selectedLanguage = getLanguage(language);
+  if (!selectedLanguage) return res.status(400).json({ error: 'Unsupported language' });
+  if (!Array.isArray(texts) || !texts.length || texts.length > 250 ||
+      texts.some(value => typeof value !== 'string' || !value.trim() || value.length > 2000) ||
+      JSON.stringify(texts).length > 20000) {
+    return res.status(400).json({ error: 'Invalid recipe text' });
+  }
+
+  try {
+    const schema = {
+      type: 'object',
+      properties: { translations: { type: 'array', items: { type: 'string' } } },
+      required: ['translations'],
+    };
+    const valid = raw => {
+      const result = cleanAndParseJson(raw);
+      return Array.isArray(result.translations) && result.translations.length === texts.length &&
+        result.translations.every((value, index) => typeof value === 'string' && value.trim() &&
+          hasMatchingNumbers(texts[index], value));
+    };
+    const completion = await modelService.generate({
+      contents: JSON.stringify(texts),
+      config: {
+        systemInstruction: `Translate each string in the input JSON array into ${selectedLanguage.promptName}. Return the same number of strings in the same order in a JSON object with a translations array. Preserve ingredient quantities, numbers, cooking temperatures and times exactly. Translate cooking instructions, ingredient names, units and dish names; keep common proper nouns where appropriate. Do not add instructions or change the recipe. ${languageInstruction(selectedLanguage)}`,
+        temperature: 0.1,
+        responseMimeType: 'application/json',
+        responseJsonSchema: schema,
+        maxOutputTokens: 6000,
+      },
+    }, valid);
+    res.json(cleanAndParseJson(completion.text));
+  } catch (error) {
+    console.error('Recipe translation error:', error);
+    res.status(503).json({ error: 'Recipe translation is unavailable. Please try again.' });
   }
 });
 

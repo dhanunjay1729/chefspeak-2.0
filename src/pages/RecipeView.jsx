@@ -3,6 +3,7 @@ import { readCookingSession, writeCookingSession, clearCookingSession } from '..
 // src/pages/RecipeView.jsx
 import { useEffect, useRef, useState, Fragment } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { useUserProfile } from "../hooks/useUserProfile";
 import { TTSService } from "../services/ttsService";
 import { getDishById, saveCookingNotes } from "../services/userService";
 import { useTimer } from "../hooks/useTimer";
@@ -18,13 +19,22 @@ import { useParams, Navigate } from "react-router-dom";
 import { ArrowLeft, ChefHat, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { AnalyticsService } from "../services/analyticsService"; // ✅ Import
+import { geminiService } from "../services/geminiService";
+import { recipeTextFields, applyRecipeTextTranslations } from "../../shared/recipeTranslation";
+import { DEFAULT_LANGUAGE, getLanguage } from "../../shared/languages";
+import { db } from "../firebase";
+import { doc, updateDoc } from "firebase/firestore";
 
 export default function RecipeView() {
   const { user } = useAuth();
+  const { preferredLanguage, loading: profileLoading, error: profileError, refresh: refreshProfile } = useUserProfile();
   const { recipeId } = useParams();
   const navigate = useNavigate();
   const [language, setLanguage] = useState("English");
   const [recipe, setRecipe] = useState(null);
+  const [displayRecipe, setDisplayRecipe] = useState(null);
+  const [translationError, setTranslationError] = useState(false);
+  const [translationRetry, setTranslationRetry] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
@@ -49,6 +59,10 @@ export default function RecipeView() {
 
   // Load recipe from database
   useEffect(() => {
+    if (profileLoading) return;
+    let active = true;
+    setLoading(true);
+    setError(null);
     const loadRecipe = async () => {
       if (!user?.uid || !recipeId) {
         setLoading(false);
@@ -58,6 +72,27 @@ export default function RecipeView() {
       try {
         const recipeData = await getDishById(user.uid, recipeId);
         if (recipeData) {
+          let shown = recipeData;
+          setTranslationError(false);
+          const savedLanguage = getLanguage(recipeData.language)?.code || DEFAULT_LANGUAGE;
+          if (!profileError && savedLanguage !== preferredLanguage) {
+            try {
+              let translated = recipeData.translations?.[preferredLanguage];
+              if (!translated) {
+                const fields = recipeTextFields(recipeData);
+                const text = await geminiService.translateRecipe(fields.map(field => field.text), preferredLanguage);
+                translated = applyRecipeTextTranslations(recipeData, fields, text, preferredLanguage);
+                updateDoc(doc(db, 'users', user.uid, recipeData.recipeCollection, recipeId), {
+                  [`translations.${preferredLanguage}`]: translated,
+                }).catch(error => console.warn('Could not cache translated recipe:', error));
+              }
+              shown = { ...recipeData, ...translated, language: preferredLanguage };
+            } catch (translationFailure) {
+              console.error('Could not translate saved recipe:', translationFailure);
+              if (active) setTranslationError(true);
+            }
+          }
+          if (!active) return;
           const session = readCookingSession(user.uid);
           if (session?.path === `/recipe/${recipeId}`) {
             setCurrentStepIndex(session.currentStepIndex);
@@ -67,30 +102,32 @@ export default function RecipeView() {
             firstStepSpokenRef.current = true;
           }
           setRecipe(recipeData);
-          setSteps(recipeData.recipeSteps || []);
-          setIngredients(recipeData.ingredients || []); // ✅ Load ingredients
+          setDisplayRecipe(shown);
+          setSteps(shown.recipeSteps || []);
+          setIngredients(shown.ingredients || []); // ✅ Load ingredients
           setNutritionInfo(recipeData.nutritionInfo || null);
-          setLanguage(recipeData.language || "English");
+          setLanguage(shown.language || DEFAULT_LANGUAGE);
         } else {
-          setError("Recipe not found");
+          if (active) setError("Recipe not found");
         }
       } catch (err) {
         console.error("Failed to load recipe:", err);
-        setError("Failed to load recipe");
+        if (active) setError("Failed to load recipe");
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
 
     loadRecipe();
-  }, [user?.uid, recipeId, restoreTimer]);
+    return () => { active = false; };
+  }, [user?.uid, recipeId, restoreTimer, preferredLanguage, profileLoading, profileError, translationRetry]);
 
   useEffect(() => {
-    if (loading || !recipe || !steps.length || finished) return;
+    if (loading || !displayRecipe || !steps.length || finished) return;
     writeCookingSession(user?.uid, {
-      path: `/recipe/${recipeId}`, recipe, currentStepIndex, deadline, timerOwnerIndex, checkedIds,
+      path: `/recipe/${recipeId}`, recipe: displayRecipe, currentStepIndex, deadline, timerOwnerIndex, checkedIds,
     });
-  }, [loading, recipe, steps.length, finished, user?.uid, recipeId, currentStepIndex, deadline, timerOwnerIndex, checkedIds]);
+  }, [loading, displayRecipe, steps.length, finished, user?.uid, recipeId, currentStepIndex, deadline, timerOwnerIndex, checkedIds]);
 
   const finishCooking = () => {
     clearCookingSession(user?.uid);
@@ -323,11 +360,11 @@ export default function RecipeView() {
           </button>
           
           <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md rounded-3xl border border-zinc-200/60 dark:border-zinc-800 p-6 mb-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none">
-            <h1 className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100 mb-3">{recipe.dishName}</h1>
+            <h1 className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100 mb-3">{displayRecipe?.dishName || recipe.dishName}</h1>
             <div className="flex gap-4 text-sm font-medium text-zinc-600 dark:text-zinc-400">
               <span className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                {recipe.language}
+                {getLanguage(language)?.name || language}
               </span>
               {recipe.people && (
                 <span className="flex items-center gap-1.5">
@@ -342,6 +379,19 @@ export default function RecipeView() {
               </p>
             )}
           </div>
+          {translationError && (
+            <div className="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-4 text-sm text-amber-900 dark:text-amber-200">
+              This saved recipe could not be shown in {getLanguage(preferredLanguage)?.name}. It is showing its original language.
+              <button type="button" onClick={() => setTranslationRetry(value => value + 1)}
+                className="ml-2 font-semibold underline">Try again</button>
+            </div>
+          )}
+          {profileError && (
+            <div className="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-4 text-sm text-amber-900 dark:text-amber-200">
+              Your language setting could not be loaded. This recipe is showing its saved language.
+              <button type="button" onClick={refreshProfile} className="ml-2 font-semibold underline">Retry</button>
+            </div>
+          )}
         </div>
 
         {/* ✅ Nutrition Info - separate */}

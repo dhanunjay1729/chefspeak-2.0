@@ -23,6 +23,10 @@ export const LANGUAGES = [
 ];
 
 const byCode = new Map(LANGUAGES.map(language => [language.code, language]));
+const NON_LATIN_LANGUAGES = new Set([
+  'hindi', 'telugu', 'tamil', 'kannada', 'malayalam', 'marathi',
+  'gujarati', 'bengali', 'punjabi', 'japanese', 'chinese', 'russian',
+]);
 
 export function getLanguage(value) {
   if (value == null || value === '') return byCode.get(DEFAULT_LANGUAGE);
@@ -32,8 +36,9 @@ export function getLanguage(value) {
 }
 
 export function languageInstruction(language) {
-  const avoidEnglish = language.code.endsWith('_english') ? '' : ' Do not answer in English or transliterate into Latin script.';
-  return `Write all human-readable recipe content in ${language.promptName}.${avoidEnglish} Keep JSON property names, type values and ingredient IDs in English. Do not copy English example text into the answer.`;
+  const avoidEnglish = language.code.endsWith('_english') ? '' : ' Do not answer in English.';
+  const nativeScript = NON_LATIN_LANGUAGES.has(language.code) ? ' Use the specified native script rather than Latin transliteration.' : '';
+  return `Write all human-readable recipe content in ${language.promptName}.${avoidEnglish}${nativeScript} Keep JSON property names, type values and ingredient IDs in English. Do not copy English example text into the answer.`;
 }
 
 export function languageForNewRecipe(preferredLanguage, urlLanguage) {

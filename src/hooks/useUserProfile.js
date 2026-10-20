@@ -14,20 +14,25 @@ export function useUserProfile() {
   const { user } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // ✅ FIX: loadProfile is now outside useEffect so refresh() can call it
   const loadProfile = useCallback(async () => {
     if (!user?.uid) {
+      setProfile(null);
+      setError(null);
       setLoading(false);
       return;
     }
 
+    setLoading(true);
     try {
       const profileData = await getUserProfile(user.uid);
       setProfile(profileData || {});
+      setError(null);
     } catch (error) {
       console.error('Failed to load user profile:', error);
-      setProfile({});
+      setError('Unable to load your saved preferences. Check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -50,6 +55,7 @@ export function useUserProfile() {
 
   return {
     profile,
+    error,
     loading,
     displayName,
     preferredLanguage, // Now returns "indian_english" instead of "English"
