@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { GeminiService } from '../services/geminiService';
+import { RecipeApiService } from '../services/recipeApiService';
 import { createRecipeAssembler } from '../utils/recipeData';
 import { readRecipeStream } from '../utils/sse';
 
@@ -11,7 +11,7 @@ export function useRecipe() {
   const [nutritionInfo, setNutritionInfo] = useState(null);
   const [isLoadingNutrition, setIsLoadingNutrition] = useState(false);
   const [error, setError] = useState(null);
-  const service = useRef(new GeminiService()).current;
+  const service = useRef(new RecipeApiService()).current;
   const requestId = useRef(0);
 
   const fetchRecipeSteps = async (dish, people, extraNotes, language, userPreferences = {}) => {

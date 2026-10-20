@@ -17,6 +17,9 @@ function strictSchema(schema) {
 }
 
 export function createModelFallback({ ai, env = process.env, fetchImpl = fetch, now = Date.now, log = console.warn }) {
+  const provider = env.AI_PROVIDER || 'paid';
+  if (!['paid', 'gemini'].includes(provider)) throw new Error('AI_PROVIDER must be paid or gemini');
+  if (provider === 'gemini' && !ai) throw new Error('Gemini provider requires a client');
   const cooldowns = new Map();
   const freeConfig = config => ({ ...config, maxOutputTokens: config.maxOutputTokens || 3500,
     httpOptions: { timeout: 20000, retryOptions: { attempts: 1 } } });
@@ -27,9 +30,9 @@ export function createModelFallback({ ai, env = process.env, fetchImpl = fetch, 
   };
 
   async function paid({ contents, config = {} }) {
-    // Explicit activation keeps a newly added key from enabling unbudgeted traffic.
-    if (env.AI_PAID_FALLBACK_ENABLED !== 'true' || !env.AI_GATEWAY_API_KEY) {
-      throw new Error('Free recipe models are unavailable. Paid fallback is not configured.');
+    // Gemini mode keeps its optional paid fallback gate; paid mode uses Gateway directly.
+    if (!env.AI_GATEWAY_API_KEY || (provider === 'gemini' && env.AI_PAID_FALLBACK_ENABLED !== 'true')) {
+      throw new Error('Paid recipe model is not configured.');
     }
     const sourceSchema = config.responseJsonSchema;
     // OpenAI structured outputs require a root object, including for array results.
@@ -59,6 +62,11 @@ export function createModelFallback({ ai, env = process.env, fetchImpl = fetch, 
 
   return {
     async generate(request, validate = () => true) {
+      if (provider === 'paid') {
+        const result = await paid(request);
+        if (!validate(result.text)) throw new Error('Paid model returned unusable content');
+        return result;
+      }
       for (const model of FREE_MODELS) {
         if ((cooldowns.get(model) || 0) > now()) continue;
         try {
@@ -74,6 +82,16 @@ export function createModelFallback({ ai, env = process.env, fetchImpl = fetch, 
       return result;
     },
     async *stream(request) {
+      if (provider === 'paid') {
+        const result = await paid(request);
+        if (request.config?.responseJsonSchema) {
+          const assembler = createRecipeAssembler();
+          assembler.append(result.text);
+          assembler.finish();
+        }
+        yield { content: result.text, model: PAID_MODEL };
+        return;
+      }
       let emitted = false;
       for (const model of FREE_MODELS) {
         if ((cooldowns.get(model) || 0) > now()) continue;

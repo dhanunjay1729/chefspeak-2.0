@@ -1,8 +1,14 @@
-import { GoogleGenAI } from '@google/genai';
+import process from 'node:process';
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  // Legacy Vercel Gemini handler retained for an explicit future opt-in.
+  // The active app uses the Render API and AI Gateway instead.
+  if (process.env.AI_PROVIDER !== 'gemini') {
+    return res.status(410).json({ error: 'Legacy Gemini nutrition route is disabled' });
   }
 
   const { dish, people, extraNotes, language } = req.body;
@@ -14,6 +20,7 @@ export default async function handler(req, res) {
   const MODELS_CASCADE = ['gemini-3.1-flash-lite', 'gemini-3.6-flash', 'gemini-3.5-flash'];
 
   try {
+    const { GoogleGenAI } = await import('@google/genai');
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     let stream = null;
 

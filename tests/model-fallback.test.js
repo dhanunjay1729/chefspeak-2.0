@@ -10,17 +10,44 @@ const recipe = [{ type: 'ingredients', items: [{ id: 'rice', name: 'బియ్
 const request = { contents: 'Make rice', config: { responseMimeType: 'application/json', responseJsonSchema: recipeSchema } };
 const busy = () => { throw Object.assign(new Error('Quota exceeded'), { status: 429 }); };
 const env = { AI_PAID_FALLBACK_ENABLED: 'true', AI_GATEWAY_API_KEY: 'test-key' };
+const geminiEnv = { ...env, AI_PROVIDER: 'gemini' };
 const paidResponse = content => new Response(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content } }] }), { headers: { 'Content-Type': 'application/json' } });
 
+test('paid mode is the default and never calls Gemini for generation or streaming', async () => {
+  const ai = { models: { generateContent: () => assert.fail('Gemini generation called'),
+    generateContentStream: () => assert.fail('Gemini streaming called') } };
+  let calls = 0;
+  const service = createModelFallback({ ai, env, fetchImpl: async (_url, options) => {
+    calls++;
+    assert.equal(JSON.parse(options.body).model, 'openai/gpt-6-luna');
+    return paidResponse(JSON.stringify({ result: recipe }));
+  } });
+  assert.deepEqual(JSON.parse((await service.generate(request)).text), recipe);
+  const events = [];
+  for await (const event of service.stream(request)) events.push(event);
+  assert.equal(events.length, 1);
+  assert.equal(events[0].model, 'openai/gpt-6-luna');
+  assert.equal(calls, 2);
+});
+
+test('paid mode needs only the Gateway key, while Gemini remains an explicit opt-in', async () => {
+  const paid = createModelFallback({ env: { AI_GATEWAY_API_KEY: 'test-key' },
+    fetchImpl: async () => paidResponse('{"calories":50}') });
+  assert.equal((await paid.generate({ contents: 'nutrition' })).text, '{"calories":50}');
+  const missingKey = createModelFallback({ env: {}, fetchImpl: () => assert.fail('Unconfigured Gateway called') });
+  await assert.rejects(missingKey.generate({ contents: 'nutrition' }), /not configured/);
+  assert.throws(() => createModelFallback({ env: { AI_PROVIDER: 'gemini' } }), /requires a client/);
+});
+
 test('successful free Gemini never makes a paid call', async () => {
-  const service = createModelFallback({ ai: { models: { generateContent: async () => ({ text: '{"calories":10}' }) } }, env,
+  const service = createModelFallback({ ai: { models: { generateContent: async () => ({ text: '{"calories":10}' }) } }, env: geminiEnv,
     fetchImpl: () => assert.fail('Paid call made'), log() {} });
   assert.equal((await service.generate({ contents: 'nutrition', config: { responseMimeType: 'application/json' } })).text, '{"calories":10}');
 });
 
 test('exhausted free models use only Luna, adapt array schema, and keep quota failures on cooldown', async () => {
   let freeCalls = 0, paidCalls = 0;
-  const service = createModelFallback({ ai: { models: { generateContent() { freeCalls++; busy(); } } }, env, log() {},
+  const service = createModelFallback({ ai: { models: { generateContent() { freeCalls++; busy(); } } }, env: geminiEnv, log() {},
     fetchImpl: async (_url, options) => {
       paidCalls++;
       const payload = JSON.parse(options.body);
@@ -38,7 +65,7 @@ test('exhausted free models use only Luna, adapt array schema, and keep quota fa
 });
 
 test('paid requests stay disabled without explicit activation even when a key exists', async () => {
-  const service = createModelFallback({ ai: { models: { generateContent: busy } }, env: { AI_GATEWAY_API_KEY: 'test-key' },
+  const service = createModelFallback({ ai: { models: { generateContent: busy } }, env: { AI_PROVIDER: 'gemini', AI_GATEWAY_API_KEY: 'test-key' },
     fetchImpl: () => assert.fail('Unconfigured paid call'), log() {} });
   await assert.rejects(service.generate(request), /not configured/);
 });
@@ -57,7 +84,7 @@ test('a failed partial Gemini recipe is reset before the paid replacement reache
     calls++;
     if (calls === 1) yield { text: JSON.stringify([recipe[0]]).slice(0, -1) };
     busy();
-  } } }, env, log() {}, fetchImpl: async () => paidResponse(JSON.stringify({ result: recipe })) });
+  } } }, env: geminiEnv, log() {}, fetchImpl: async () => paidResponse(JSON.stringify({ result: recipe })) });
   const events = [];
   for await (const event of service.stream(request)) events.push(event);
   assert.equal(events.filter(e => e.reset).length, 1);
@@ -71,7 +98,7 @@ test('a failed partial Gemini recipe is reset before the paid replacement reache
 });
 
 test('successful free streams report the free model and do not use Gateway', async () => {
-  const service = createModelFallback({ ai: { models: { async *generateContentStream() { yield { text: JSON.stringify(recipe) }; } } }, env,
+  const service = createModelFallback({ ai: { models: { async *generateContentStream() { yield { text: JSON.stringify(recipe) }; } } }, env: geminiEnv,
     fetchImpl: () => assert.fail('Paid call made'), log() {} });
   const events = [];
   for await (const event of service.stream(request)) events.push(event);
@@ -86,7 +113,7 @@ test('truncated paid answers are rejected instead of being accepted as complete'
 });
 
 test('invalid free nutrition can fall through to a valid paid answer', async () => {
-  const service = createModelFallback({ ai: { models: { generateContent: async () => ({ text: '{"calories":-5}' }) } }, env, log() {},
+  const service = createModelFallback({ ai: { models: { generateContent: async () => ({ text: '{"calories":-5}' }) } }, env: geminiEnv, log() {},
     fetchImpl: async () => paidResponse('{"calories":50}') });
   const result = await service.generate({ contents: 'nutrition', config: { responseMimeType: 'application/json' } }, text => JSON.parse(text).calories >= 0);
   assert.equal(JSON.parse(result.text).calories, 50);

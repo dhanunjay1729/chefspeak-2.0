@@ -17,7 +17,7 @@ import {
   AlertCircle,
   RotateCcw,
 } from "lucide-react";
-import { GeminiService } from "../services/geminiService";
+import { RecipeApiService } from "../services/recipeApiService";
 import { toast } from "../contexts/ToastContext";
 
 const STAPLES = ['water', 'oil', 'salt', 'cumin', 'turmeric', 'chilli powder', 'black pepper'];
@@ -109,7 +109,7 @@ export default function IngredientsPage() {
     setLoading(true);
     setError(null);
     try {
-      const svc = new GeminiService();
+      const svc = new RecipeApiService();
       const list = await svc.suggestRecipesByIngredients(ingredients, staples, { dietType, allergies, dislikes, skillLevel }, preferredLanguage);
       if (id !== requestId.current) return;
       if (!list.length) setError('No suitable dishes found. Try adding more ingredients.');

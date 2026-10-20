@@ -1,11 +1,11 @@
-// src/services/geminiService.js
-export class GeminiService {
+// Browser HTTP client for the ChefSpeak backend; AI provider selection stays on the server.
+export class RecipeApiService {
   constructor() {
     this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3002';
   }
 
   /**
-   * Fetch with retry optimized for slow free-tier cold starts and transient 5xx errors
+   * Fetch with retry for server cold starts and transient 5xx errors
    */
   async fetchWithRetry(url, options, attempt = 1) {
     try {
@@ -163,4 +163,4 @@ export class GeminiService {
   }
 }
 
-export const geminiService = new GeminiService();
+export const recipeApiService = new RecipeApiService();

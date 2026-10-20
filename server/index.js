@@ -7,7 +7,6 @@ import { hasMatchingNumbers } from '../shared/recipeTranslation.js';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { GoogleGenAI } from '@google/genai';
 import textToSpeech from '@google-cloud/text-to-speech';
 import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
@@ -22,11 +21,12 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3002;
 
-// Initialize Gemini with server-side key
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-});
-
+// Gemini stays available for a future explicit opt-in. Paid Gateway is the default.
+let ai = null;
+if (process.env.AI_PROVIDER === 'gemini') {
+  const { GoogleGenAI } = await import('@google/genai');
+  ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+}
 const modelService = createModelFallback({ ai });
 
 // Robust JSON cleaner & parser that handles markdown fences and partial text

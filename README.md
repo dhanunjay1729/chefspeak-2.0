@@ -65,7 +65,7 @@ Recipes, suggestions, and nutrition are AI-generated. Check ingredients against 
 | Layer | Technology |
 | --- | --- |
 | Interface | React · Vite · Tailwind CSS · Framer Motion |
-| Recipe intelligence | Google Gemini |
+| Recipe intelligence | OpenAI GPT-6 Luna via Vercel AI Gateway; optional Gemini mode |
 | Voice | Google Cloud Text-to-Speech |
 | Accounts and saved recipes | Firebase Authentication · Firestore |
 | API | Node.js · Express |

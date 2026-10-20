@@ -9,7 +9,7 @@ import { Button } from "../components/ui/button";
 import Header from "../components/Header";
 import { Heart, Salad, ChefHat, Compass, X, Loader2, Sparkles, ArrowRight, Info, Lock } from "lucide-react";
 import { FullPageLoader } from "../components/LoadingSpinner";
-import { geminiService } from "../services/geminiService";
+import { recipeApiService } from "../services/recipeApiService";
 import { getLanguage } from "../../shared/languages";
 
 function ActionTile({ icon: Icon, title, desc, onClick, variant = "default" }) {
@@ -114,7 +114,7 @@ export default function Dashboard() {
         if (favs.length > 0 && mounted) {
           const favNames = favs.map(f => f.dishName);
           const prefs = { dietType, allergies, dislikes };
-          const recs = await geminiService.fetchPersonalizedRecommendations(favNames, prefs, preferredLanguage);
+          const recs = await recipeApiService.fetchPersonalizedRecommendations(favNames, prefs, preferredLanguage);
           if (mounted) setRecommendations(recs);
         }
       } catch (err) {

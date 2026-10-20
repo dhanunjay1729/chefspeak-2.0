@@ -19,7 +19,7 @@ import { useParams, Navigate } from "react-router-dom";
 import { ArrowLeft, ChefHat, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { AnalyticsService } from "../services/analyticsService"; // ✅ Import
-import { geminiService } from "../services/geminiService";
+import { recipeApiService } from "../services/recipeApiService";
 import { recipeTextFields, applyRecipeTextTranslations } from "../../shared/recipeTranslation";
 import { DEFAULT_LANGUAGE, getLanguage } from "../../shared/languages";
 import { db } from "../firebase";
@@ -80,7 +80,7 @@ export default function RecipeView() {
               let translated = recipeData.translations?.[preferredLanguage];
               if (!translated) {
                 const fields = recipeTextFields(recipeData);
-                const text = await geminiService.translateRecipe(fields.map(field => field.text), preferredLanguage);
+                const text = await recipeApiService.translateRecipe(fields.map(field => field.text), preferredLanguage);
                 translated = applyRecipeTextTranslations(recipeData, fields, text, preferredLanguage);
                 updateDoc(doc(db, 'users', user.uid, recipeData.recipeCollection, recipeId), {
                   [`translations.${preferredLanguage}`]: translated,
