@@ -28,10 +28,11 @@ import { AudioControls } from "../components/AudioControls";
 import { LoadingSpinner } from "../components/LoadingSpinner"; // ✅ Import
 import { AnalyticsService } from "../services/analyticsService"; // ✅ Import
 import { toast } from "../contexts/ToastContext";
+import { languageForNewRecipe } from "../../shared/languages";
 
 export default function Assistant() {
   const { user } = useAuth();
-  const { preferredLanguage, dietType, allergies, dislikes, skillLevel, refresh: refreshProfile } = useUserProfile();
+  const { preferredLanguage, dietType, allergies, dislikes, skillLevel, loading: profileLoading, refresh: refreshProfile } = useUserProfile();
   const [searchParams] = useSearchParams();
   const [language, setLanguage] = useState("English");
   const [selectedDish, setSelectedDish] = useState("");
@@ -158,6 +159,7 @@ export default function Assistant() {
 
   const processRecipeRequest = async (formData, userPreferences) => {
     const { dishName, servings, notes } = formData;
+    const requestLanguage = languageForNewRecipe(preferredLanguage, searchParams.get('language'));
     
     generationRef.current++;
     setSavedRecipeId(null);
@@ -168,13 +170,14 @@ export default function Assistant() {
     stopTimer();
     ttsService.stop();
     setSelectedDish(dishName);
+    setLanguage(requestLanguage);
     firstStepSpokenRef.current = false;
     setTimerOwnerIndex(null);
 
     setPrefilledData({ dishName, servings, notes });
 
     const generation = generationRef.current;
-    fetchRecipeSteps(dishName, servings, notes, language, userPreferences).then(recipe => {
+    fetchRecipeSteps(dishName, servings, notes, requestLanguage, userPreferences).then(recipe => {
       if (generation === generationRef.current && !user?.uid && recipe) setCookingNotes(readLocalCookingNotes({ dishName, ingredients: recipe.ingredients }) || '');
     }).catch(() => {
       toast.error("Unable to generate recipe steps. Tap 'Try Again' to retry.");
@@ -182,6 +185,7 @@ export default function Assistant() {
   };
 
   const handleFormSubmit = async ({ dishName, servings, notes }) => {
+    if (profileLoading) return;
     sessionStorage.removeItem('chefspeak_assistant_state');
     
     const userPreferences = {
@@ -202,7 +206,7 @@ export default function Assistant() {
     await processRecipeRequest({ dishName, servings, notes }, userPreferences);
 
     // ✅ Track recipe generation
-    AnalyticsService.trackRecipeGenerated(dishName, language);
+    AnalyticsService.trackRecipeGenerated(dishName, languageForNewRecipe(preferredLanguage, searchParams.get('language')));
   };
 
   const updateUserDietPreference = async (newDietType) => {
@@ -376,7 +380,7 @@ export default function Assistant() {
 
         <RecipeForm 
           onSubmit={handleFormSubmit} 
-          isLoading={isLoading}
+          isLoading={isLoading || profileLoading}
           initialData={prefilledData}
         />
 

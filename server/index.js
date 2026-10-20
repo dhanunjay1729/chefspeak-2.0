@@ -2,6 +2,7 @@ import { recipeSchema } from './recipeSchema.js';
 import { createModelFallback } from './modelFallback.js';
 import { normalizeSuggestions } from './pantry.js';
 import { sanitizeNutrition } from './nutrition.js';
+import { getLanguage, languageInstruction } from '../shared/languages.js';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -123,6 +124,9 @@ app.use('/api/', apiLimiter);
 app.post('/api/recipe/steps', async (req, res) => {
   try {
     const { dish, people, extraNotes, language = 'English', userPreferences, outputFormat } = req.body;
+    const selectedLanguage = getLanguage(language);
+    if (!selectedLanguage) return res.status(400).json({ error: 'Unsupported language' });
+    const writingInstruction = languageInstruction(selectedLanguage);
 
     let prompt = `Give me a clear, numbered, step-by-step recipe for ${dish} for ${people} people. And the first step should be the list of ingredients required with their quantities.(make the first line catchy)`;
 
@@ -163,11 +167,11 @@ app.post('/api/recipe/steps', async (req, res) => {
     let systemInstruction;
     if (outputFormat === 'structured') {
       prompt = prompt.replace('And the first step should be the list of ingredients required with their quantities.(make the first line catchy)', '');
-      prompt += ` Respond with a JSON array of objects only. First object: {"type":"ingredients","items":[{"id":"i1","name":"Rice","quantity":1,"unit":"cup","optional":false}]}. Then one object per cooking step: {"type":"step","text":"Rinse the rice.","ingredientIds":["i1"],"ingredientAmounts":[{"ingredientId":"i1","quantity":1,"unit":"cup"}],"timeSeconds":null}. Include every ingredient and its quantity in the first object, including oil, seasoning and water. Use unique IDs and reference only those IDs in each step. ingredientAmounts must list the amount actually used in that step, such as half the oil now and the rest later; use an empty array when no ingredients are used. Use null quantity for amounts such as to taste and explain that in unit. timeSeconds is a positive integer only for a timer the user should start during that step; otherwise null. Keep JSON keys, type values and IDs exactly as specified. Write ingredient names, units and step text in ${language}. Do not include an ingredients step among cooking steps.`;
-      systemInstruction = 'You are a professional chef. Respect all dietary restrictions and allergies. Output a JSON array using the requested schema. The first object must contain all ingredients; subsequent objects must contain cooking steps. Never use markdown fences, comments, or extra text.';
+      prompt += ` Respond with a JSON array of objects only. First object: {"type":"ingredients","items":[{"id":"i1","name":"<ingredient name>","quantity":1,"unit":"<unit>","optional":false}]}. Then one object per cooking step: {"type":"step","text":"<cooking instruction>","ingredientIds":["i1"],"ingredientAmounts":[{"ingredientId":"i1","quantity":1,"unit":"<unit>"}],"timeSeconds":null}. Include every ingredient and its quantity in the first object, including oil, seasoning and water. Use unique IDs and reference only those IDs in each step. ingredientAmounts must list the amount actually used in that step, such as half the oil now and the rest later; use an empty array when no ingredients are used. Use null quantity for amounts such as to taste and explain that in unit. timeSeconds is a positive integer only for a timer the user should start during that step; otherwise null. Keep JSON keys, type values and IDs exactly as specified. ${writingInstruction} Do not include an ingredients step among cooking steps.`;
+      systemInstruction = `You are a professional chef. ${writingInstruction} Respect all dietary restrictions and allergies. Output a JSON array using the requested schema. The first object must contain all ingredients; subsequent objects must contain cooking steps. Never use markdown fences, comments, or extra text.`;
     } else {
-      prompt += ` Respond only in ${language}. Do not use markdown bold formatting (**), markdown headers (#), or bullet points. Use exactly one numbered step per line.`;
-      systemInstruction = `You are a multilingual professional chef assistant. Output only cooking steps, numbered, in ${language}. Always respect dietary restrictions and allergies. Each numbered step must be on its own line.`;
+      prompt += ` ${writingInstruction} Do not use markdown bold formatting (**), markdown headers (#), or bullet points. Use exactly one numbered step per line.`;
+      systemInstruction = `You are a multilingual professional chef assistant. ${writingInstruction} Output only cooking steps, numbered. Always respect dietary restrictions and allergies. Each numbered step must be on its own line.`;
     }
 
     const stream = modelService.stream({
@@ -241,6 +245,8 @@ app.post('/api/recipe/nutrition', async (req, res) => {
 app.post('/api/recipe/suggest', async (req, res) => {
   try {
     const { ingredients, count = 5, cuisine, language = "English", userPreferences } = req.body;
+    const selectedLanguage = getLanguage(language);
+    if (!selectedLanguage) return res.status(400).json({ error: 'Unsupported language' });
 
     const list = Array.isArray(ingredients) ? ingredients : [];
     const recipeCount = Math.min(Math.max(count, 1), 5);
@@ -264,8 +270,8 @@ app.post('/api/recipe/suggest', async (req, res) => {
       sys.push(`NEVER suggest dishes containing these allergens: ${userPreferences.allergies.join(', ')}.`);
     }
 
-    sys.push(`Output strict JSON: {"recipes":["Dish 1","Dish 2","Dish 3","Dish 4","Dish 5"]}.`);
-    sys.push(`No extra text or keys. Use ${language} for dish names.`);
+    sys.push(`Output a strict JSON object with one "recipes" array of dish name strings. No extra text or keys.`);
+    sys.push(`Write every dish name in ${selectedLanguage.promptName}; do not use English as a fallback unless English is selected.`);
 
     const user = [
       cuisine ? `Target cuisine: ${cuisine}.` : "",
@@ -287,19 +293,15 @@ app.post('/api/recipe/suggest', async (req, res) => {
     });
 
     const parsed = cleanAndParseJson(completion.text, {});
-    let recipes = Array.isArray(parsed.recipes) ? parsed.recipes : [];
+    const recipes = Array.isArray(parsed.recipes) ? parsed.recipes : [];
 
-    const defaultFallbacks = ['Vegetable Stir Fry', 'Spiced Rice Bowl', 'Mixed Vegetable Curry', 'Comforting Soup', 'Quick Skillet Meal'];
-    let idx = 0;
-    while (recipes.length < recipeCount) {
-      recipes.push(defaultFallbacks[idx++ % defaultFallbacks.length]);
-    }
+    if (recipes.length < recipeCount) throw new Error('Incomplete recipe suggestions');
 
     res.json({ recipes: recipes.slice(0, recipeCount) });
 
   } catch (error) {
     console.error('Recipe suggestion error:', error);
-    res.json({ recipes: ['Vegetable Stir Fry', 'Spiced Rice Bowl', 'Mixed Vegetable Curry', 'Comforting Soup', 'Quick Skillet Meal'] });
+    res.status(503).json({ error: 'Unable to suggest dishes. Please try again.' });
   }
 });
 
@@ -345,6 +347,8 @@ app.get('/api/search', async (req, res) => {
 // Recipe suggestions by ingredients endpoint with fallback & retry
 app.post('/api/recipe/suggest-by-ingredients', async (req, res) => {
   const { ingredients, staples = [], userPreferences = {}, language = 'English' } = req.body;
+  const selectedLanguage = getLanguage(language);
+  if (!selectedLanguage) return res.status(400).json({ error: 'Unsupported language' });
   const validList = list => Array.isArray(list) && list.length <= 50 && list.every(value => typeof value === 'string' && value.trim() && value.length <= 100);
   if (!validList(ingredients) || !ingredients.length || !validList(staples)) {
     return res.status(400).json({ error: 'Provide a list of ingredients and confirmed staples' });
@@ -357,8 +361,8 @@ Prefer dishes needing no additional ingredients; otherwise list ALL missing requ
 Use the exact supplied ingredient names when referencing available items. Required ingredients must include everything necessary to cook the dish. Keep optional garnishes separate.
 Diet: ${userPreferences.dietType || 'nonveg'} (veg excludes meat, fish and eggs; vegan excludes all animal products).
 Exclude allergens: ${JSON.stringify(userPreferences.allergies || [])}. Avoid dislikes: ${JSON.stringify(userPreferences.dislikes || [])}.
-Skill: ${userPreferences.skillLevel || 'beginner'}. Dish names should be in ${language}; ingredient names must remain in the same language as the input.
-Return strict JSON: {"suggestions":[{"name":"Dish name","estimatedMinutes":25,"requiredIngredients":["rice","oil"],"optionalIngredients":["coriander"]}]}. Return only realistic dishes with approximate total cooking time. Do not claim a dish is allergen-safe.`;
+Skill: ${userPreferences.skillLevel || 'beginner'}. Write dish names in ${selectedLanguage.promptName}; do not use English as a fallback unless English is selected. Ingredient names must remain in the same language as the input.
+Return a strict JSON object with a "suggestions" array. Each item has "name" (localized dish name), "estimatedMinutes" (number), "requiredIngredients" (array of strings) and "optionalIngredients" (array of strings). Return only realistic dishes with approximate total cooking time. Do not claim a dish is allergen-safe.`;
     const completion = await modelService.generate({
       contents: prompt,
       config: { responseMimeType: 'application/json', temperature: 0.3, maxOutputTokens: 1500,
@@ -380,30 +384,9 @@ Return strict JSON: {"suggestions":[{"name":"Dish name","estimatedMinutes":25,"r
 // TTS endpoint
 app.post('/api/speak', async (req, res) => {
   const { text, language } = req.body;
-
-  const languageVoiceMap = {
-    indian_english: 'en-IN-Chirp-HD-O',
-    us_english: 'en-US-Chirp3-HD-Aoede',
-    uk_english: 'en-GB-Chirp3-HD-Leda',
-    hindi: 'hi-IN-Chirp3-HD-Leda',
-    telugu: 'te-IN-Chirp3-HD-Leda',
-    tamil: 'ta-IN-Chirp3-HD-Leda',
-    kannada: 'kn-IN-Chirp3-HD-Leda',
-    malayalam: 'ml-IN-Chirp3-HD-Leda',
-    marathi: 'mr-IN-Chirp3-HD-Leda',
-    gujarati: 'gu-IN-Chirp3-HD-Leda',
-    bengali: 'bn-IN-Chirp3-HD-Leda',
-    punjabi: 'pa-IN-Chirp3-HD-Leda',
-    spanish: 'es-ES-Chirp3-HD-Leda',
-    french: 'fr-FR-Chirp3-HD-Leda',
-    german: 'de-DE-Chirp3-HD-Leda',
-    italian: 'it-IT-Chirp3-HD-Leda',
-    japanese: 'ja-JP-Chirp3-HD-Achernar',
-    chinese: 'cmn-CN-Chirp3-HD-Leda',
-    russian: 'ru-RU-Chirp3-HD-Leda',
-  };
-
-  const voiceName = languageVoiceMap[language?.toLowerCase()] || 'en-IN-Wavenet-D';
+  const selectedLanguage = getLanguage(language);
+  if (!selectedLanguage) return res.status(400).json({ error: 'Unsupported language' });
+  const voiceName = selectedLanguage.voice;
   const languageCode = voiceName.split('-').slice(0, 2).join('-');
 
   try {
@@ -429,6 +412,8 @@ app.post('/api/speak', async (req, res) => {
 app.post('/api/recipe/recommend', async (req, res) => {
   try {
     const { favoriteDishes, userPreferences, language = "English" } = req.body;
+    const selectedLanguage = getLanguage(language);
+    if (!selectedLanguage) return res.status(400).json({ error: 'Unsupported language' });
 
     if (!favoriteDishes || !Array.isArray(favoriteDishes) || favoriteDishes.length === 0) {
       return res.status(400).json({ error: 'Favorite dishes array required' });
@@ -455,7 +440,7 @@ Make sure the recommendations are distinct but share similar culinary appeal (e.
       prompt += ` Avoid using these ingredients: ${userPreferences.dislikes.join(', ')}.`;
     }
 
-    prompt += ` Respond ONLY with a valid JSON array of 4 dish names strings in ${language}. Example format: ["Dish 1", "Dish 2", "Dish 3", "Dish 4"]`;
+    prompt += ` Respond ONLY with a valid JSON array of 4 dish name strings in ${selectedLanguage.promptName}.`;
 
     const completion = await modelService.generate({
         contents: prompt,
@@ -469,17 +454,15 @@ Make sure the recommendations are distinct but share similar culinary appeal (e.
     });
 
     const parsed = cleanAndParseJson(completion.text, []);
-    let recommendations = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.recommendations) ? parsed.recommendations : []);
+    const recommendations = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.recommendations) ? parsed.recommendations : []);
 
-    if (recommendations.length === 0) {
-      recommendations = ['Paneer Butter Masala', 'Vegetable Biryani', 'Dal Makhani', 'Palak Paneer'];
-    }
+    if (recommendations.length < 4) throw new Error('Incomplete recommendations');
 
     res.json({ recommendations: recommendations.slice(0, 4) });
 
   } catch (error) {
     console.error('Personalized recommendation error:', error);
-    res.json({ recommendations: ['Chef Recommendation 1', 'Chef Recommendation 2', 'Chef Recommendation 3', 'Chef Recommendation 4'] });
+    res.status(503).json({ error: 'Unable to recommend dishes. Please try again.' });
   }
 });
 

@@ -9,32 +9,7 @@ import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import Header from "../components/Header";
 import { LogOut, Save, X, Loader2, AlertCircle, Info, Check } from "lucide-react"; // ✅ Add Check
 import { FullPageLoader } from "../components/LoadingSpinner"; // ✅ Import
-
-// Updated language list to match all supported TTS languages in index.js
-const LANGS = [
-  // Indian Languages
-  { code: "Indian_english", name: "Indian English" },
-  { code: "hindi", name: "Hindi" },
-  { code: "telugu", name: "Telugu" },
-  { code: "tamil", name: "Tamil" },
-  { code: "kannada", name: "Kannada" },
-  { code: "malayalam", name: "Malayalam" },
-  { code: "marathi", name: "Marathi" },
-  { code: "gujarati", name: "Gujarati" },
-  { code: "bengali", name: "Bengali" },
-  { code: "punjabi", name: "Punjabi" },
-  
-  // International Languages
-  { code: "US_english", name: "US English" },
-  { code: "UK_english", name: "UK English" },
-  { code: "spanish", name: "Spanish" },
-  { code: "french", name: "French" },
-  { code: "german", name: "German" },
-  { code: "italian", name: "Italian" },
-  { code: "japanese", name: "Japanese" },
-  { code: "chinese", name: "Chinese (Mandarin)" },
-  { code: "russian", name: "Russian" },
-];
+import { LANGUAGES, DEFAULT_LANGUAGE, getLanguage } from "../../shared/languages";
 
 const DIET_OPTIONS = [
   { 
@@ -68,7 +43,7 @@ export default function Profile() {
 
   const [form, setForm] = useState({
     displayName: "",
-    preferredLanguage: "Indian_english", // Changed default to match index.js
+    preferredLanguage: DEFAULT_LANGUAGE,
     skill: "beginner",
     diet: "nonveg",
     allergies: [],
@@ -88,7 +63,7 @@ export default function Profile() {
       const data = snap.exists() ? snap.data() : {};
       const seed = {
         displayName: data.displayName || user.displayName || "",
-        preferredLanguage: data.preferredLanguage || "indian_english", // Changed default
+        preferredLanguage: getLanguage(data.preferredLanguage)?.code || DEFAULT_LANGUAGE,
         skill: data.skill || "beginner",
         diet: data.diet || "nonveg",
         allergies: data.allergies || [],
@@ -326,8 +301,8 @@ export default function Profile() {
                       className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/50 dark:focus:ring-amber-500/30 transition-all"
                     >
                       <optgroup label="Indian Languages">
-                        {LANGS.filter(l => 
-                          ['Indian_english', 'hindi', 'telugu', 'tamil', 'kannada', 'malayalam', 'marathi', 'gujarati', 'bengali', 'punjabi'].includes(l.code)
+                        {LANGUAGES.filter(l =>
+                          ['indian_english', 'hindi', 'telugu', 'tamil', 'kannada', 'malayalam', 'marathi', 'gujarati', 'bengali', 'punjabi'].includes(l.code)
                         ).map((l) => (
                           <option key={l.code} value={l.code}>
                             {l.name}
@@ -335,8 +310,8 @@ export default function Profile() {
                         ))}
                       </optgroup>
                       <optgroup label="International Languages">
-                        {LANGS.filter(l => 
-                          ['US_english', 'UK_english', 'spanish', 'french', 'german', 'italian', 'japanese', 'chinese', 'russian'].includes(l.code)
+                        {LANGUAGES.filter(l =>
+                          ['us_english', 'uk_english', 'spanish', 'french', 'german', 'italian', 'japanese', 'chinese', 'russian'].includes(l.code)
                         ).map((l) => (
                           <option key={l.code} value={l.code}>
                             {l.name}

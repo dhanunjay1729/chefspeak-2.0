@@ -5,6 +5,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getUserProfile } from '../services/userService';
+import { DEFAULT_LANGUAGE, getLanguage } from '../../shared/languages';
+
+const EMPTY_PREFERENCES = [];
 
 // Remove the old LANGUAGE_MAP - we'll use the raw code directly
 export function useUserProfile() {
@@ -38,11 +41,11 @@ export function useUserProfile() {
   const displayName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || 'Chef';
   
   // ✅ FIX: Return the language code directly, no mapping
-  const preferredLanguage = profile?.preferredLanguage || 'indian_english';
+  const preferredLanguage = getLanguage(profile?.preferredLanguage)?.code || DEFAULT_LANGUAGE;
   
   const dietType = profile?.diet || 'nonveg';
-  const allergies = profile?.allergies || [];
-  const dislikes = profile?.dislikes || [];
+  const allergies = profile?.allergies || EMPTY_PREFERENCES;
+  const dislikes = profile?.dislikes || EMPTY_PREFERENCES;
   const skillLevel = profile?.skill || 'beginner';
 
   return {
