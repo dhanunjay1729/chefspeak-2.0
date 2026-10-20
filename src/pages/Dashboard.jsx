@@ -80,7 +80,7 @@ function ActionTile({ icon: Icon, title, desc, onClick, variant = "default" }) {
 export default function Dashboard() {
   const authCtx = useAuth();
   const currentUser = authCtx.currentUser ?? authCtx.user ?? null;
-  const { displayName, dietType, allergies, dislikes } = useUserProfile();
+  const { displayName, dietType, allergies, dislikes, preferredLanguage, loading: profileLoading } = useUserProfile();
   const navigate = useNavigate();
   const cookingSession = readCookingSession(currentUser?.uid);
   const [items, setItems] = useState([]);
@@ -98,6 +98,7 @@ export default function Dashboard() {
   useEffect(() => {
     let mounted = true;
     (async () => {
+      if (profileLoading) return;
       if (!currentUser) {
         if (mounted) setLoading(false);
         return;
@@ -112,7 +113,7 @@ export default function Dashboard() {
         if (favs.length > 0 && mounted) {
           const favNames = favs.map(f => f.dishName);
           const prefs = { dietType, allergies, dislikes };
-          const recs = await geminiService.fetchPersonalizedRecommendations(favNames, prefs, "English");
+          const recs = await geminiService.fetchPersonalizedRecommendations(favNames, prefs, preferredLanguage);
           if (mounted) setRecommendations(recs);
         }
       } catch (err) {
@@ -127,7 +128,7 @@ export default function Dashboard() {
     return () => {
       mounted = false;
     };
-  }, [currentUser]);
+  }, [currentUser, profileLoading, preferredLanguage, dietType, allergies, dislikes]);
 
   // ✅ PAGINATION LOGIC
   const paginatedItems = useMemo(() => {
@@ -463,4 +464,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
