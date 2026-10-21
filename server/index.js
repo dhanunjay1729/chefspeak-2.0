@@ -77,9 +77,11 @@ const corsOptions = {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    // Allow localhost and any vercel.app subdomain for preview deployments
+    // Capacitor serves bundled pages from local origins on Android and iOS.
     if (
       origin.startsWith('http://localhost:') || 
+      origin === 'https://localhost' ||
+      origin === 'capacitor://localhost' ||
       origin.endsWith('.vercel.app') || 
       origin === 'https://chefspeak.vercel.app'
     ) {
