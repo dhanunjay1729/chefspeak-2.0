@@ -2,8 +2,9 @@
 // this code is responsible for rendering a signup form that allows users to create an account using email/password or Google sign-in.
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createUserWithEmailAndPassword, updateProfile, signInWithPopup } from "firebase/auth";
-import { auth, db, googleProvider } from "../firebase";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { auth, db } from "../firebase";
+import { signInWithGoogle } from "../services/googleSignIn";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { Mail, Lock, User, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { serverWakeService } from "../services/serverWakeService";
@@ -94,6 +95,7 @@ export default function SignupForm({ onLoadingChange }) {
       return;
     }
 
+    setLoading(true);
     onLoadingChange?.(true);
 
     try {
@@ -122,6 +124,8 @@ export default function SignupForm({ onLoadingChange }) {
       
     } catch (err) {
       setError(err.message || "Failed to create account");
+    } finally {
+      setLoading(false);
       onLoadingChange?.(false);
     }
   };
@@ -131,7 +135,7 @@ export default function SignupForm({ onLoadingChange }) {
     setGoogleLoading(true);
 
     try {
-      const result = await signInWithPopup(auth, googleProvider);
+      const result = await signInWithGoogle();
 
       const userDocRef = doc(db, "users", result.user.uid);
       const userDocSnap = await getDoc(userDocRef);
