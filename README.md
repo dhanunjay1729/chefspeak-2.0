@@ -71,6 +71,27 @@ Recipes, suggestions, and nutrition are AI-generated. Check ingredients against 
 | API | Node.js · Express |
 | Hosting | Vercel · Render |
 
+## 📱 Android and iOS projects
+
+The `android/` and `ios/` folders use Capacitor to package this React app. They share the recipe screens and hosted API with the website. The native app ID is `com.dhanunjay1729.chefspeak` on both platforms.
+
+1. Install Node.js 22+, then run `npm ci` in the repository root.
+2. Create an ignored `.env.local` from `.env.example` and fill in the existing Firebase **web** app values. Mobile builds require these values at build time. Optionally set `VITE_MOBILE_API_BASE_URL`; it defaults to `https://chefspeak-api.onrender.com` and should use HTTPS.
+3. Run `npm run mobile:sync` after each web code change. This builds the web bundle and copies it into both native projects.
+4. For an Android debug APK, install JDK 21 and Android SDK Platform 36, then run `cd android && ./gradlew assembleDebug`. The APK is written to `android/app/build/outputs/apk/debug/app-debug.apk`. Android Studio can also build and test the project.
+5. Open `ios/App/App.xcodeproj` in Xcode on a Mac to build and test iOS. A Mac is required for the iOS build.
+
+The native apps are registered in Firebase project `chefspeak-599e8`. Their config files are ignored by Git. On a fresh checkout, a signed-in Firebase CLI can restore them:
+
+```sh
+firebase apps:sdkconfig android 1:432936353340:android:8307e84b604edd4f05cd39 --project chefspeak-599e8 --out android/app/google-services.json
+firebase apps:sdkconfig ios 1:432936353340:ios:29d2af21248e1c0f05cd39 --project chefspeak-599e8 --out ios/App/App/GoogleService-Info.plist
+```
+
+The iOS project includes the plist in its target and has its Google callback URL scheme. For Android Google sign-in, add the debug and eventual release signing certificate SHA-1 fingerprints to the Android app in Firebase, then download the updated `google-services.json`. Test sign-in on devices. [Android setup](https://firebase.google.com/docs/auth/android/google-signin) · [iOS setup](https://firebase.google.com/docs/auth/ios/google-signin)
+
+Cooking timers schedule local device alerts on mobile. Notification and exact-alarm permissions can affect delivery; verify them on the target devices. The browser-based voice command components are not used in the active cooking screens. Native voice commands still need device testing, while spoken step playback remains available.
+
 ## 🤝 Contributing
 
 Have an idea or found a bug? [Open an issue](https://github.com/dhanunjay1729/chefspeak-2.0/issues) or send a pull request. For code changes, run `npm test` and `npm run build` before submitting.
