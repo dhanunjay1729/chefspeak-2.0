@@ -1,7 +1,8 @@
-// Browser HTTP client for the ChefSpeak backend; AI provider selection stays on the server.
+// HTTP client for the ChefSpeak backend; AI provider selection stays on the server.
+import { apiBaseUrl } from '../config/api';
 export class RecipeApiService {
   constructor() {
-    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3002';
+    this.baseURL = apiBaseUrl;
   }
 
   /**

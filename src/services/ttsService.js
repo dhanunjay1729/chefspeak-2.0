@@ -1,5 +1,6 @@
 // src/services/ttsService.js
 import { toast } from "../contexts/ToastContext";
+import { apiBaseUrl } from "../config/api";
 
 export class TTSService {
   constructor() {
@@ -8,7 +9,7 @@ export class TTSService {
     this.onPlayStateChange = null;
     this.onProgressChange = null;
     this.playbackRate = 1.0;
-    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3002'; // ✅ FIX #12
+    this.baseURL = apiBaseUrl;
   }
 
   /**

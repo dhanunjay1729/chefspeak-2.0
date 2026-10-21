@@ -1,0 +1,22 @@
+{
+  "appId": "com.dhanunjay1729.chefspeak",
+  "appName": "ChefSpeak",
+  "webDir": "dist",
+  "plugins": {
+    "FirebaseAuthentication": {
+      "providers": ["google.com"],
+      "skipNativeAuth": true
+    }
+  },
+  "experimental": {
+    "ios": {
+      "spm": {
+        "packageOptions": {
+          "@capacitor-firebase/authentication": {
+            "symlink": true
+          }
+        }
+      }
+    }
+  }
+}

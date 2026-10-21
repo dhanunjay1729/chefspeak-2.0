@@ -1,5 +1,6 @@
 // src/App.jsx
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, HashRouter, Routes, Route, useLocation } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
 import { Suspense, lazy, useEffect } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ToastProvider } from "./contexts/ToastContext";
@@ -8,6 +9,7 @@ import WelcomePreferences from "./components/WelcomePreferences";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import RedirectIfAuthed from "./routes/RedirectIfAuthed";
 import { AnalyticsService } from "./services/analyticsService"; // ✅ Import
+import { apiBaseUrl } from "./config/api";
 
 const Signup = lazy(() => import("./pages/Signup"));
 const Login = lazy(() => import("./pages/Login"));
@@ -18,6 +20,7 @@ const Profile = lazy(() => import("./pages/Profile"));
 const RecipeView = lazy(() => import("./pages/RecipeView"));
 const Favorites = lazy(() => import("./pages/Favorites"));
 const Help = lazy(() => import("./pages/Help"));
+const Router = Capacitor.isNativePlatform() ? HashRouter : BrowserRouter;
 
 function RecipeRoute() {
   const location = useLocation();
@@ -46,8 +49,7 @@ function App() {
     AnalyticsService.initialize();
     
     // Ping the backend to wake it up from Render hibernation
-    const backendUrl = import.meta.env.VITE_API_BASE_URL || 'https://chefspeak-api.onrender.com';
-    fetch(`${backendUrl}/health`).catch(() => {/* silent — server may be cold starting */});
+    fetch(`${apiBaseUrl}/health`).catch(() => {/* silent — server may be cold starting */});
   }, []);
 
   return (

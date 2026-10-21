@@ -1,7 +1,8 @@
 // src/services/serverWakeService.js
+import { apiBaseUrl } from '../config/api';
 class ServerWakeService {
   constructor({ baseURL, minIntervalMs = 60 * 1000, useHead = true } = {}) {
-    this.baseURL = baseURL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:3002';
+    this.baseURL = baseURL || apiBaseUrl;
     this.lastWakeTime = 0;
     this.minIntervalMs = minIntervalMs; // default 60s
     this.useHead = useHead;
