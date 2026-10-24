@@ -65,8 +65,8 @@ export default function Favorites() {
     return (
       <>
         <Header />
-        <div className="min-h-screen bg-white py-10 px-4 flex flex-col items-center justify-center">
-          <p className="text-gray-600 mb-4">Please log in to view your favorites.</p>
+        <div className="min-h-screen bg-white dark:bg-zinc-950 py-10 px-4 flex flex-col items-center justify-center">
+          <p className="text-gray-600 dark:text-zinc-300 mb-4">Please log in to view your favorites.</p>
           <button
             onClick={() => navigate("/login")}
             className="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700"
@@ -81,13 +81,13 @@ export default function Favorites() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gradient-to-b from-white to-zinc-50">
+      <div className="min-h-screen bg-gradient-to-b from-white to-zinc-50 dark:from-zinc-950 dark:to-zinc-900">
         <div className="mx-auto max-w-5xl px-4 py-10 space-y-8">
           {/* Header with back button */}
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate("/dashboard")}
-              className="inline-flex items-center gap-2 text-amber-600 hover:text-amber-700"
+              className="inline-flex items-center gap-2 text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
             >
               <ArrowLeft size={20} />
               Back to Dashboard
@@ -97,11 +97,11 @@ export default function Favorites() {
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-3">
               <Heart className="text-red-500 fill-current" size={32} />
-              <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900">
+              <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100">
                 Favorite Recipes
               </h1>
             </div>
-            <p className="text-zinc-600">Your saved recipes, ready to cook anytime</p>
+            <p className="text-zinc-600 dark:text-zinc-400">Your saved recipes, ready to cook anytime</p>
           </div>
 
           {/* Favorites Grid */}
@@ -111,21 +111,21 @@ export default function Favorites() {
                 {Array.from({ length: 8 }).map((_, i) => (
                   <div
                     key={i}
-                    className="rounded-2xl border border-zinc-200 bg-white overflow-hidden animate-pulse"
+                    className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden animate-pulse"
                   >
                     <div className="p-4 space-y-2">
-                      <div className="h-5 bg-zinc-100 rounded" />
-                      <div className="h-3 bg-zinc-100 rounded w-2/3" />
-                      <div className="h-3 bg-zinc-100 rounded w-1/2" />
+                      <div className="h-5 bg-zinc-100 dark:bg-zinc-800 rounded" />
+                      <div className="h-3 bg-zinc-100 dark:bg-zinc-800 rounded w-2/3" />
+                      <div className="h-3 bg-zinc-100 dark:bg-zinc-800 rounded w-1/2" />
                     </div>
                   </div>
                 ))}
               </div>
             ) : favorites.length === 0 ? (
               <div className="text-center py-16">
-                <Heart className="mx-auto mb-4 text-gray-300" size={64} />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No favorites yet</h3>
-                <p className="text-gray-600 mb-6">
+                <Heart className="mx-auto mb-4 text-gray-300 dark:text-zinc-600" size={64} />
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-zinc-100 mb-2">No favorites yet</h3>
+                <p className="text-gray-600 dark:text-zinc-400 mb-6">
                   Start cooking and add recipes to your favorites to see them here.
                 </p>
                 <button
@@ -147,7 +147,7 @@ export default function Favorites() {
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") openRecipeView(favorite);
                     }}
-                    className="relative cursor-pointer text-left rounded-2xl overflow-hidden border border-zinc-200 bg-white hover:shadow-md hover:-translate-y-0.5 transition focus:outline-none focus:ring-2 focus:ring-red-500/30"
+                    className="relative cursor-pointer text-left rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:shadow-md dark:hover:border-zinc-700 hover:-translate-y-0.5 transition focus:outline-none focus:ring-2 focus:ring-red-500/30"
                   >
                     {/* Remove button */}
                     <button
@@ -155,7 +155,7 @@ export default function Favorites() {
                       aria-label="Remove from favorites"
                       title="Remove from favorites"
                       onClick={(e) => handleRemove(e, favorite.id)}
-                      className="absolute top-2 right-2 z-10 inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/90 text-red-600 border border-red-200 shadow hover:bg-white focus:outline-none focus:ring-2 focus:ring-red-500/30"
+                      className="absolute top-2 right-2 z-10 inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/90 dark:bg-zinc-800/90 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900 shadow hover:bg-white dark:hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-red-500/30"
                     >
                       {removing[favorite.id] ? (
                         <Loader2 size={14} className="animate-spin" />
@@ -170,19 +170,19 @@ export default function Favorites() {
                     </div>
 
                     <div className="p-4 pt-8">
-                      <div className="font-semibold text-lg text-zinc-900 line-clamp-2 mb-2">
+                      <div className="font-semibold text-lg text-zinc-900 dark:text-zinc-100 line-clamp-2 mb-2">
                         {favorite.dishName}
                       </div>
-                      <div className="text-sm text-zinc-600 space-y-1">
+                      <div className="text-sm text-zinc-600 dark:text-zinc-300 space-y-1">
                         <div>{favorite.language || "English"}</div>
                         {favorite.people && <div>{favorite.people} servings</div>}
                         {favorite.notes && (
-                          <div className="text-xs text-zinc-500 line-clamp-2">
+                          <div className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2">
                             {favorite.notes}
                           </div>
                         )}
                       </div>
-                      <div className="mt-3 text-xs text-zinc-400">
+                      <div className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
                         {favorite.recipeSteps?.length || 0} steps
                       </div>
                     </div>

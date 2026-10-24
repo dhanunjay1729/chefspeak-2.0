@@ -155,7 +155,7 @@ export default function Profile() {
       {/* ✅ Success Toast Notification */}
       {showSaveToast && (
         <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 duration-300">
-          <div className="relative bg-white rounded-2xl shadow-2xl border border-emerald-200 p-4 pr-12 max-w-sm">
+          <div className="relative bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-emerald-200 dark:border-emerald-900 p-4 pr-12 max-w-sm">
             {/* Gradient glow effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 via-teal-500/20 to-emerald-500/20 
                           blur-xl rounded-2xl -z-10 animate-pulse" />
@@ -173,10 +173,10 @@ export default function Profile() {
               
               {/* Text */}
               <div className="flex-1 pt-1">
-                <h4 className="text-sm font-semibold text-zinc-900 mb-0.5">
+                <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-0.5">
                   Profile Updated! 🎉
                 </h4>
-                <p className="text-xs text-zinc-600">
+                <p className="text-xs text-zinc-600 dark:text-zinc-300">
                   Your preferences have been saved successfully.
                 </p>
               </div>
@@ -184,11 +184,11 @@ export default function Profile() {
               {/* Close button */}
               <button
                 onClick={() => setShowSaveToast(false)}
-                className="absolute top-2 right-2 p-1.5 rounded-lg hover:bg-zinc-100 
-                         active:bg-zinc-200 transition-colors group"
+                className="absolute top-2 right-2 p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800
+                         active:bg-zinc-200 dark:active:bg-zinc-700 transition-colors group"
                 aria-label="Close notification"
               >
-                <X size={14} className="text-zinc-400 group-hover:text-zinc-600" />
+                <X size={14} className="text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-100" />
               </button>
             </div>
             
