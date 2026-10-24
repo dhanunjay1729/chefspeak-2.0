@@ -2,6 +2,7 @@ import { recipeSchema } from './recipeSchema.js';
 import { createModelFallback } from './modelFallback.js';
 import { normalizeSuggestions } from './pantry.js';
 import { sanitizeNutrition } from './nutrition.js';
+import { classifyCookingIntent, cookingIntentMessages, validCookingInput } from './cookingIntent.js';
 import { getLanguage, languageInstruction } from '../shared/languages.js';
 import { hasMatchingNumbers } from '../shared/recipeTranslation.js';
 import express from 'express';
@@ -11,6 +12,7 @@ import textToSpeech from '@google-cloud/text-to-speech';
 import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import process from 'node:process';
 
 // Fix __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -121,12 +123,30 @@ const apiLimiter = rateLimit({
 // Apply rate limiter to all API routes
 app.use('/api/', apiLimiter);
 
+async function requireCookingIntent(res, mode, input) {
+  if (!validCookingInput(mode, input)) {
+    res.status(400).json({ error: mode === 'dish' ? 'Enter a dish or cooking request (up to 160 characters).' : 'Provide a list of food ingredients.' });
+    return false;
+  }
+  try {
+    const decision = await classifyCookingIntent(mode, input);
+    if (decision === 'allow') return true;
+    res.status(422).json({ code: decision === 'clarify' ? 'NEEDS_CLARIFICATION' : 'OUTSIDE_COOKING', error: cookingIntentMessages[mode][decision] });
+    return false;
+  } catch (error) {
+    console.error('Cooking intent check failed:', error);
+    res.status(503).json({ error: 'Unable to check this cooking request right now. Please try again.' });
+    return false;
+  }
+}
+
 // Recipe steps endpoint
 app.post('/api/recipe/steps', async (req, res) => {
   try {
     const { dish, people, extraNotes, language = 'English', userPreferences, outputFormat } = req.body;
     const selectedLanguage = getLanguage(language);
     if (!selectedLanguage) return res.status(400).json({ error: 'Unsupported language' });
+    if (!(await requireCookingIntent(res, 'dish', dish))) return;
     const writingInstruction = languageInstruction(selectedLanguage);
 
     let prompt = `Give me a clear, numbered, step-by-step recipe for ${dish} for ${people} people. And the first step should be the list of ingredients required with their quantities.(make the first line catchy)`;
@@ -291,6 +311,7 @@ app.post('/api/recipe/suggest', async (req, res) => {
     if (!selectedLanguage) return res.status(400).json({ error: 'Unsupported language' });
 
     const list = Array.isArray(ingredients) ? ingredients : [];
+    if (!(await requireCookingIntent(res, 'pantry', list))) return;
     const recipeCount = Math.min(Math.max(count, 1), 5);
 
     let sys = [
@@ -396,6 +417,7 @@ app.post('/api/recipe/suggest-by-ingredients', async (req, res) => {
     return res.status(400).json({ error: 'Provide a list of ingredients and confirmed staples' });
   }
   const available = [...new Set([...ingredients, ...staples].map(value => value.trim()))];
+  if (!(await requireCookingIntent(res, 'pantry', available))) return;
   try {
     const prompt = `Suggest up to 5 dishes using these available ingredients: ${JSON.stringify(available)}.
 Only these ingredients are known to be available. Do not assume oil, salt, spices, or any other staples.
@@ -508,6 +530,10 @@ Make sure the recommendations are distinct but share similar culinary appeal (e.
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-});
+export { app };
+
+if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+  });
+}

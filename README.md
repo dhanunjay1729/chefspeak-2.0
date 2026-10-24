@@ -29,6 +29,8 @@ A recipe that speaks your language. A meal made from what you have.
 
 **🤖 Your idea, a complete recipe.** Name a dish, choose your servings, and add your notes. Get ingredients and cooking steps shaped by your preferences and skill level.
 
+**🍽️ Food requests only.** ChefSpeak checks dish names and pantry ingredients before generating. Enter something unrelated, such as “laptop,” and it asks for a cooking request instead of inventing a recipe. If your request is too vague, it asks you to be more specific.
+
 **🔊 Listen. Cook. Repeat.** Hear each step in your preferred language, replay it when you need to, and start a timer right from the instructions. Check off ingredients as you prep.
 
 **🥕 A little pantry inspiration.** Add your ingredients and staples. Discover dishes with cooking times and a clear list of what you have, what is missing, and what is optional.
@@ -66,6 +68,7 @@ Recipes, suggestions, and nutrition are AI-generated. Check ingredients against 
 | --- | --- |
 | Interface | React · Vite · Tailwind CSS · Framer Motion |
 | Recipe intelligence | OpenAI GPT-6 Luna via Vercel AI Gateway; optional Gemini mode |
+| Cooking intent check | TypeSafe AI Jev via Vercel AI Gateway, before recipe generation ([evaluation](docs/cooking-intent-guard.md)) |
 | Voice | Google Cloud Text-to-Speech |
 | Accounts and saved recipes | Firebase Authentication · Firestore |
 | API | Node.js · Express |

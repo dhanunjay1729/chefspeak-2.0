@@ -114,10 +114,11 @@ export default function IngredientsPage() {
       if (id !== requestId.current) return;
       if (!list.length) setError('No suitable dishes found. Try adding more ingredients.');
       else setSuggestions(list);
-    } catch {
+    } catch (error) {
       if (id !== requestId.current) return;
-      setError('Unable to generate suggestions. Please check your connection and try again.');
-      toast.error('Failed to fetch recipe suggestions.');
+      const message = error.status === 422 ? error.message : 'Unable to generate suggestions. Please check your connection and try again.';
+      setError(message);
+      toast.error(message);
     } finally {
       if (id === requestId.current) setLoading(false);
     }

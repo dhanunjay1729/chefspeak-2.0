@@ -181,8 +181,8 @@ export default function Assistant() {
     const generation = generationRef.current;
     fetchRecipeSteps(dishName, servings, notes, requestLanguage, userPreferences).then(recipe => {
       if (generation === generationRef.current && !user?.uid && recipe) setCookingNotes(readLocalCookingNotes({ dishName, ingredients: recipe.ingredients }) || '');
-    }).catch(() => {
-      if (generation === generationRef.current) toast.error("Unable to generate recipe steps. Tap 'Try Again' to retry.");
+    }).catch((error) => {
+      if (generation === generationRef.current) toast.error(error.status === 422 ? error.message : "Unable to generate recipe steps. Tap 'Try Again' to retry.");
     });
   };
 
