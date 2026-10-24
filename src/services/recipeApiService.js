@@ -1,4 +1,11 @@
 // Browser HTTP client for the ChefSpeak backend; AI provider selection stays on the server.
+async function requestError(response, fallback) {
+  const body = await response.json().catch(() => ({}));
+  const error = new Error(response.status >= 400 && response.status < 500 && typeof body.error === 'string' ? body.error : fallback);
+  error.status = response.status;
+  return error;
+}
+
 export class RecipeApiService {
   constructor() {
     this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3002';
@@ -48,7 +55,7 @@ export class RecipeApiService {
     });
 
     if (!response.ok) {
-      throw new Error(`Recipe steps request failed: ${response.status}`);
+      throw await requestError(response, `Recipe steps request failed: ${response.status}`);
     }
 
     return response;
@@ -118,7 +125,7 @@ export class RecipeApiService {
     });
 
     if (!response.ok) {
-      throw new Error(`Ingredient suggestions request failed: ${response.status}`);
+      throw await requestError(response, `Ingredient suggestions request failed: ${response.status}`);
     }
 
     const data = await response.json();
