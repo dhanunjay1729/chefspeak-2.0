@@ -458,7 +458,7 @@ export default function Dashboard() {
                       →
                     </button>
                   </div>
-                  <div className="text-sm font-medium text-zinc-400 dark:text-zinc-500">
+                  <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
                     Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, items.length)} of {items.length}
                   </div>
                 </div>

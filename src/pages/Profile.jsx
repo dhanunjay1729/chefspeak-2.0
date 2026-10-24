@@ -250,7 +250,7 @@ export default function Profile() {
                         </>
                       )}
                     </ul>
-                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-500">
+                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
                       Future recipe suggestions will respect this preference.
                     </p>
                   </div>
@@ -286,7 +286,7 @@ export default function Profile() {
                     value={form.displayName}
                     onChange={(e) => setField("displayName", e.target.value)}
                     placeholder="Your name"
-                    className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/50 dark:focus:ring-amber-500/30 transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
+                    className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/50 dark:focus:ring-amber-500/30 transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-400"
                   />
                 </div>
 
@@ -383,9 +383,9 @@ export default function Profile() {
                     )
                   }
                   placeholder="e.g., peanuts, dairy, shellfish"
-                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/50 dark:focus:ring-amber-500/30 transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/50 dark:focus:ring-amber-500/30 transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-400"
                 />
-                <p className="mt-2 text-xs font-medium text-zinc-500 dark:text-zinc-500">
+                <p className="mt-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
                   Comma-separated list. Recipes will exclude these ingredients.
                 </p>
               </div>
@@ -406,9 +406,9 @@ export default function Profile() {
                     )
                   }
                   placeholder="e.g., olives, cilantro, mushrooms"
-                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/50 dark:focus:ring-amber-500/30 transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/50 dark:focus:ring-amber-500/30 transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-400"
                 />
-                <p className="mt-2 text-xs font-medium text-zinc-500 dark:text-zinc-500">
+                <p className="mt-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
                   Comma-separated list. Recipes will avoid these ingredients when possible.
                 </p>
               </div>

@@ -174,7 +174,7 @@ export function RecipeForm({ onSubmit, isLoading, initialData }) {
           type="text"
           value={dishName}
           onChange={(e) => setDishName(e.target.value)}
-          className="w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/50 dark:text-white transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
+          className="w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/50 dark:text-white transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-400"
           placeholder={currentPlaceholder}
         />
       </div>
@@ -195,7 +195,7 @@ export function RecipeForm({ onSubmit, isLoading, initialData }) {
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          className="w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/50 dark:text-white transition-all resize-none placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
+          className="w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/50 dark:text-white transition-all resize-none placeholder:text-zinc-400 dark:placeholder:text-zinc-400"
           rows="3"
           placeholder="e.g., Make it spicy, use less oil..."
         />

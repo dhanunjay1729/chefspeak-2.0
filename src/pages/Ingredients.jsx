@@ -170,7 +170,7 @@ export default function IngredientsPage() {
                       if (e.key === "Enter") addFromInput();
                     }}
                     placeholder="Type ingredients… (comma or Enter to add)"
-                    className="h-12 text-base rounded-xl bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 focus-visible:ring-fuchsia-500/50 dark:text-zinc-100 transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
+                    className="h-12 text-base rounded-xl bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 focus-visible:ring-fuchsia-500/50 dark:text-zinc-100 transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-400"
                   />
                 </div>
                 <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row">
@@ -211,7 +211,7 @@ export default function IngredientsPage() {
                       </button>
                     </span>
                   ))}
-                  <span className="ml-1 text-xs text-zinc-500 dark:text-zinc-500">
+                  <span className="ml-1 text-xs text-zinc-500 dark:text-zinc-400">
                     {ingredients.length} item{ingredients.length > 1 ? "s" : ""}
                   </span>
                 </div>
@@ -227,7 +227,7 @@ export default function IngredientsPage() {
 
               {/* Quick add */}
               <div>
-                <div className="text-xs font-medium uppercase text-zinc-500 dark:text-zinc-500 mb-2 tracking-wider">
+                <div className="text-xs font-medium uppercase text-zinc-500 dark:text-zinc-400 mb-2 tracking-wider">
                   Quick add
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -346,7 +346,7 @@ export default function IngredientsPage() {
                       </p>
                       {!!s.optionalIngredients.length && <p className="text-xs">Optional: {s.optionalIngredients.join(', ')}</p>}
                     </div>
-                    <div className="text-xs font-medium text-zinc-500 dark:text-zinc-500 mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800/60">
+                    <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800/60">
                       Tap to start cooking
                     </div>
                   </button>
