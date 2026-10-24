@@ -137,7 +137,7 @@ export default function Login() {
               <div className="text-center mt-8">
                 <p className="text-slate-300">Don't have an account?</p>
                 <button
-                  onClick={() => navigate("/")}
+                  onClick={() => navigate("/signup")}
                   className="mt-3 text-amber-400 hover:text-amber-300 font-semibold transition-colors"
                 >
                   Create an Account →
