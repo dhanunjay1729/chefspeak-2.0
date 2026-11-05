@@ -32,12 +32,28 @@ The response's `X-TTS-Cache` header is `miss`, `hit`, `coalesced`, or `bypass`. 
 
 Set backend **`TTS_CACHE_ENABLED=false`** and restart/redeploy to bypass completed-result caching. In-flight deduplication, validation, concurrency protection, voices and playback fixes remain active. Remove that setting or set it to `true` and restart to enable caching again. There is no public cache listing or download-by-hash endpoint.
 
-No aggregate billing dashboard or monthly spend cap is added. Savings depend on the number of exact repeated requests, eviction and backend restarts; newly generated text still needs synthesis. Do not infer a savings percentage from the presence of a cache.
+## Measuring usage
+
+The production server writes a `[TTS_USAGE]` JSON report to Render logs once per minute after narration activity. It retains fixed-size process-local counters and latency totals, with no recipe text, IP addresses, user IDs, or per-user records. There is no public metrics endpoint.
+
+| Field | Meaning |
+| --- | --- |
+| `requests`, `responses`, `response_errors`, `invalid_requests` | Traffic handled by `/api/speak`, after the existing IP limiter and JSON parser. Rejections before the handler, including rate-limit responses, are excluded. |
+| `eligible_requests` | Valid inputs entering the audio cache. |
+| `cache_hits`, `cache_misses`, `coalesced_requests`, `bypassed_requests` | Completed reuse, newly started work, joining existing work, and new work while completed caching is disabled. Coalesced work can subsequently fail. |
+| `provider_attempts`, `provider_successes`, `provider_failures` | SDK synthesis calls and usable-audio outcomes; joined requests are not extra calls. |
+| `submitted_characters`, `submitted_utf8_bytes` | Unicode code points and UTF-8 bytes passed to the SDK on provider attempts, including failed attempts. Cache hits and joined requests add no provider characters. |
+| `overload_rejections`, `expired_evictions`, `capacity_evictions`, `oversized_results` | Work refused at capacity and reasons audio was removed or not retained. |
+| `latency_ms.request`, `latency_ms.provider` | Count, total milliseconds, and maximum elapsed time for handled requests and synthesis work. Mean latency is `total_ms / count`; these are not percentile measurements. |
+
+In **Render → chefspeak-api → Logs**, search for `TTS_USAGE`. Each report is cumulative for its `started_at` process lifetime. Use differences between snapshots from the same process to measure an interval; use the final snapshot per process when combining lifetimes. Do not sum every cumulative log line. Quiet minutes produce no new report. Restart/deploy resets the in-memory counters and cache, while older reports remain subject to Render's log retention.
+
+For example, `cache_hits / eligible_requests` measures the completed-hit fraction for valid handled requests. Compare provider attempts and input counts with Google Cloud usage/billing. Passing characters to the SDK does not prove a request reached Google or was billed; failures/timeouts and provider accounting can differ. No billing dashboard or monthly spend cap is added. Savings depend on actual repeat traffic and cache lifetime.
 
 ## Playback behavior and verification
 
 Both cooking pages use `TTSService`. Each speak/Stop invalidates older asynchronous requests, and media callbacks belong to the current element. Stop or replacement detaches the old audio and releases its object URL. Paused and ended audio remain available for Resume/Restart until discarded. Playback failures are recoverable and stale failures do not overwrite the current state.
 
-`tests/tts-service.test.js` loads the actual service through Vite and uses controlled network/media APIs to verify ordering, Stop, URL ownership, errors and controls. `tests/speech-cache.test.js` checks keys, byte identity, deduplication, eviction, expiry, retry, saturation, all configured voice mappings and the real Express route with Google mocked. Its HTTP test also confirms that repeated cache hits still reach the existing IP limit. Run `npm test` and `npm run build`.
+`tests/tts-service.test.js` loads the actual service through Vite and uses controlled network/media APIs to verify ordering, Stop, URL ownership, errors and controls. `tests/speech-cache.test.js` checks keys, byte identity, deduplication, eviction, expiry, retry, saturation, all configured voice mappings and the real Express route with Google mocked. Its HTTP test also confirms that repeated cache hits still reach the existing IP limit. `tests/speech-metrics.test.js` verifies provider-versus-request counting, Unicode counts, latency, logging recovery, and the absence of narration text from reports. Run `npm test` and `npm run build`.
 
 Mocked tests do not validate Google voice availability, pronunciation, actual billing, or browser/device audio policies. Those require real deployment/device checks; this implementation does not claim they have been measured.

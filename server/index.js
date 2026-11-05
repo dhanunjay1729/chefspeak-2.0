@@ -4,6 +4,7 @@ import { normalizeSuggestions } from './pantry.js';
 import { sanitizeNutrition } from './nutrition.js';
 import { classifyCookingIntent, cookingIntentMessages, validCookingInput } from './cookingIntent.js';
 import { createSpeechHandler } from './speechCache.js';
+import { createSpeechMetrics } from './speechMetrics.js';
 import { getLanguage, languageInstruction } from '../shared/languages.js';
 import { hasMatchingNumbers } from '../shared/recipeTranslation.js';
 import express from 'express';
@@ -22,6 +23,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config();
 
 const app = express();
+const speechMetrics = createSpeechMetrics();
 const PORT = process.env.PORT || 3002;
 
 // Gemini stays available for a future explicit opt-in. Paid Gateway is the default.
@@ -450,6 +452,7 @@ Return a strict JSON object with a "suggestions" array. Each item has "name" (lo
 
 // TTS endpoint
 app.post('/api/speak', createSpeechHandler({
+  metrics: speechMetrics,
   cacheEnabled: process.env.TTS_CACHE_ENABLED !== 'false',
   synthesize(request, options) {
     if (!ttsClient) throw new Error('TTS client not initialized');
@@ -518,6 +521,8 @@ Make sure the recommendations are distinct but share similar culinary appeal (e.
 export { app };
 
 if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
+  // Report cumulative totals only after activity; no per-user or per-recipe logs.
+  setInterval(() => speechMetrics.report(), 60_000).unref();
   app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
   });
