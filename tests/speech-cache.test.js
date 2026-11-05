@@ -218,10 +218,15 @@ test('real /api/speak wiring returns cached MP3 and rate-limits cache hits', asy
   let server;
   try {
     const { app } = await import('../server/index.js');
+    app.set('trust proxy', 3);
     server = app.listen(0);
     const url = `http://127.0.0.1:${server.address().port}/api/speak`;
+    const health = await fetch(url.replace('/api/speak', '/health'), { headers: { 'X-ChefSpeak-Proxy-Probe': '1', 'X-Forwarded-For': '203.0.113.1, 10.0.0.1, 10.0.0.2' } });
+    assert.equal(health.headers.get('x-proxy-hop-count'), '3');
+    assert.equal(health.headers.get('x-proxy-trust-hops'), '3');
+    assert.deepEqual(await health.json(), { status: 'ok' });
     for (let i = 0; i < 201; i++) {
-      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: 'Test', language: 'hindi' }) });
+      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': `192.0.2.${i + 1}, 203.0.113.1, 10.0.0.1, 10.0.0.2` }, body: JSON.stringify({ text: 'Test', language: 'hindi' }) });
       assert.equal(res.status, i < 200 ? 200 : 429);
       if (i < 200) {
         assert.match(res.headers.get('content-type'), /audio\/mpeg/);
@@ -230,6 +235,11 @@ test('real /api/speak wiring returns cached MP3 and rate-limits cache hits', asy
         assert.deepEqual(Buffer.from(await res.arrayBuffer()), result()[0].audioContent);
       } else await res.arrayBuffer();
     }
+    // A different actual caller gets its own bucket behind the same proxies.
+    const other = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': '203.0.113.2, 10.0.0.1, 10.0.0.2' }, body: JSON.stringify({ text: 'Test', language: 'hindi' }) });
+    assert.equal(other.status, 200);
+    assert.equal(other.headers.get('x-tts-cache'), 'hit');
+    await other.arrayBuffer();
     assert.equal(synthesize.mock.callCount(), 1);
     assert.equal(synthesize.mock.calls[0].arguments[0].voice.name, LANGUAGES.find(x => x.code === 'hindi').voice);
   } finally {
