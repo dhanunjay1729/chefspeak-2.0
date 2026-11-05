@@ -69,7 +69,7 @@ Recipes, suggestions, and nutrition are AI-generated. Check ingredients against 
 | Interface | React · Vite · Tailwind CSS · Framer Motion |
 | Recipe intelligence | OpenAI GPT-6 Luna via Vercel AI Gateway; optional Gemini mode |
 | Cooking intent check | TypeSafe AI Jev via Vercel AI Gateway, before recipe generation ([evaluation](docs/cooking-intent-guard.md)) |
-| Voice | Google Cloud Text-to-Speech |
+| Voice | Google Cloud Text-to-Speech with [bounded audio reuse](docs/audio-cache.md) |
 | Accounts and saved recipes | Firebase Authentication · Firestore |
 | API | Node.js · Express |
 | Hosting | Vercel · Render |
