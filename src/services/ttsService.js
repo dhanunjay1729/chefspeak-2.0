@@ -9,6 +9,7 @@ export class TTSService {
     this.onProgressChange = null;
     this.playbackRate = 1.0;
     this.requestId = 0;
+    this.releaseAudio = null;
     this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3002'; // ✅ FIX #12
   }
 
@@ -18,11 +19,15 @@ export class TTSService {
   stop() {
     // Invalidate pending requests even when no Audio element exists yet.
     this.requestId += 1;
-    if (this.currentAudio) {
-      this.currentAudio.pause();
-      this.currentAudio.currentTime = 0;
-      this.currentAudio = null;
+    const audio = this.currentAudio;
+    this.currentAudio = null;
+    if (audio) {
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
     }
+    this.releaseAudio?.();
+    this.releaseAudio = null;
     this.isPlaying = false;
     this.onPlayStateChange?.(false);
     this.onProgressChange?.(0);
@@ -45,6 +50,7 @@ export class TTSService {
       const audioBlob = await response.blob();
       if (requestId !== this.requestId) return;
       const audioUrl = URL.createObjectURL(audioBlob);
+      this.releaseAudio = () => URL.revokeObjectURL(audioUrl);
 
       const audio = new Audio(audioUrl);
       this.currentAudio = audio;
@@ -78,14 +84,12 @@ export class TTSService {
         }
       });
 
-      // Prevent memory leaks
-      audio.addEventListener('ended', () => {
-        URL.revokeObjectURL(audioUrl);
-      });
-
+      // Retain the current URL after ended so Restart can reuse it.
+      // Stop/replacement owns releasing both the element and its URL.
       await this.playAudio(audio, requestId);
     } catch (error) {
       if (requestId !== this.requestId) return;
+      this.stop();
       console.error('TTS error:', error);
       toast.error('Audio narration is temporarily unavailable.');
     }

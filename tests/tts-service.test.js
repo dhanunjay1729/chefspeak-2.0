@@ -174,3 +174,50 @@ test('a play promise that settles after Stop cannot restart obsolete audio', asy
   assert.equal(audios[0].paused, true);
   assert.equal(service.isPlaying, false);
 });
+
+test('replacement and repeated Stop release each discarded URL exactly once', async () => {
+  const service = new TTSService();
+  await service.speak('First');
+  const first = service.currentAudio;
+  await service.speak('Second');
+  assert.deepEqual(revoked, [created[0]]);
+  assert.equal(first.src, '');
+  const second = service.currentAudio;
+  service.stop();
+  service.stop();
+  first.emit('ended');
+  second.emit('ended');
+  assert.deepEqual(revoked, created);
+  assert.equal(second.src, '');
+  assert.equal(service.currentAudio, null);
+});
+
+test('pause and ended-then-restart retain the active URL until Stop', async () => {
+  const service = new TTSService();
+  await service.speak('Step');
+  service.pause();
+  assert.deepEqual(revoked, []);
+  await service.resume();
+  service.currentAudio.emit('ended');
+  assert.deepEqual(revoked, []);
+  service.seek(0);
+  await service.resume();
+  assert.equal(globalThis.fetch.mock.callCount(), 1);
+  assert.equal(created.length, 1);
+  service.stop();
+  assert.deepEqual(revoked, created);
+});
+
+test('an Audio construction failure releases the URL and allows a later retry', async () => {
+  globalThis.Audio = class { constructor() { throw new Error('Audio unavailable'); } };
+  const service = new TTSService();
+  await service.speak('Step');
+  assert.deepEqual(revoked, created);
+  assert.equal(service.currentAudio, null);
+  assert.equal(errors.length, 1);
+  globalThis.Audio = FakeAudio;
+  await service.speak('Step');
+  assert.equal(service.isPlaying, true);
+  service.stop();
+  assert.deepEqual(revoked, created);
+});
