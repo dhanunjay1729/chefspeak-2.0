@@ -5,6 +5,7 @@ import { sanitizeNutrition } from './nutrition.js';
 import { classifyCookingIntent, cookingIntentMessages, validCookingInput } from './cookingIntent.js';
 import { createSpeechHandler } from './speechCache.js';
 import { createSpeechMetrics } from './speechMetrics.js';
+import { proxyHops, proxyProbeHeaders } from './proxyConfig.js';
 import { getLanguage, languageInstruction } from '../shared/languages.js';
 import { hasMatchingNumbers } from '../shared/recipeTranslation.js';
 import express from 'express';
@@ -23,6 +24,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config();
 
 const app = express();
+app.set('trust proxy', proxyHops(process.env.TRUST_PROXY_HOPS));
 const speechMetrics = createSpeechMetrics();
 const PORT = process.env.PORT || 3002;
 
@@ -104,6 +106,7 @@ app.use(express.json());
 
 // Health check
 app.get('/health', (req, res) => {
+  proxyProbeHeaders(req, res);
   res.json({ status: 'ok' });
 });
 
