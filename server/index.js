@@ -3,6 +3,7 @@ import { createModelFallback } from './modelFallback.js';
 import { normalizeSuggestions } from './pantry.js';
 import { sanitizeNutrition } from './nutrition.js';
 import { classifyCookingIntent, cookingIntentMessages, validCookingInput } from './cookingIntent.js';
+import { createSpeechHandler } from './speechCache.js';
 import { getLanguage, languageInstruction } from '../shared/languages.js';
 import { hasMatchingNumbers } from '../shared/recipeTranslation.js';
 import express from 'express';
@@ -446,31 +447,13 @@ Return a strict JSON object with a "suggestions" array. Each item has "name" (lo
 });
 
 // TTS endpoint
-app.post('/api/speak', async (req, res) => {
-  const { text, language } = req.body;
-  const selectedLanguage = getLanguage(language);
-  if (!selectedLanguage) return res.status(400).json({ error: 'Unsupported language' });
-  const voiceName = selectedLanguage.voice;
-  const languageCode = voiceName.split('-').slice(0, 2).join('-');
-
-  try {
-    if (!ttsClient) {
-      throw new Error('TTS client not initialized');
-    }
-
-    const [response] = await ttsClient.synthesizeSpeech({
-      input: { text },
-      voice: { languageCode, name: voiceName },
-      audioConfig: { audioEncoding: 'MP3' },
-    });
-
-    res.setHeader('Content-Type', 'audio/mpeg');
-    res.send(response.audioContent);
-  } catch (error) {
-    console.error('[TTS] Speech synthesis failed:', error.message);
-    res.status(500).json({ error: 'TTS generation failed' });
-  }
-});
+app.post('/api/speak', createSpeechHandler({
+  cacheEnabled: process.env.TTS_CACHE_ENABLED !== 'false',
+  synthesize(request, options) {
+    if (!ttsClient) throw new Error('TTS client not initialized');
+    return ttsClient.synthesizeSpeech(request, options);
+  },
+}));
 
 // Personalized recommendations endpoint based on favorites with fallback & retry
 app.post('/api/recipe/recommend', async (req, res) => {
