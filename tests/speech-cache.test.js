@@ -5,6 +5,7 @@ import { createRequire } from 'node:module';
 import process from 'node:process';
 import { createSpeechCache, createSpeechHandler } from '../server/speechCache.js';
 import { LANGUAGES } from '../shared/languages.js';
+import { createSpeechMetrics } from '../server/speechMetrics.js';
 
 const request = (text = 'Cook rice') => ({
   input: { text }, voice: { languageCode: 'en-IN', name: 'en-IN-Chirp-HD-O' },
@@ -75,7 +76,8 @@ test('simultaneous identical requests share work and failed synthesis can be ret
 test('entry and byte caps evict least-recently-used audio; oversized audio is returned but not retained', async () => {
   for (const limits of [{ maxEntries: 2 }, { maxBytes: 6 }]) {
     const calls = [];
-    const get = createSpeechCache({ ...limits, synthesize: async req => {
+    const metrics = createSpeechMetrics();
+    const get = createSpeechCache({ ...limits, metrics, synthesize: async req => {
       calls.push(req.input.text); return result(Buffer.from('123'));
     } });
     await get(request('A')); await get(request('B')); await get(request('A'));
@@ -83,17 +85,21 @@ test('entry and byte caps evict least-recently-used audio; oversized audio is re
     assert.equal((await get(request('A'))).cacheStatus, 'hit');
     assert.equal((await get(request('B'))).cacheStatus, 'miss');
     assert.deepEqual(calls, ['A', 'B', 'C', 'B']);
+    assert.equal(metrics.snapshot().counters.capacity_evictions, 2);
   }
   let calls = 0;
-  const oversized = createSpeechCache({ maxBytes: 2, synthesize: async () => { calls++; return result(); } });
+  const metrics = createSpeechMetrics();
+  const oversized = createSpeechCache({ metrics, maxBytes: 2, synthesize: async () => { calls++; return result(); } });
   await oversized(request()); await oversized(request());
   assert.equal(calls, 2);
+  assert.equal(metrics.snapshot().counters.oversized_results, 2);
 });
 
 test('expiry is absolute, pending work survives expiry, and restart starts cold', async () => {
   let time = 0, calls = 0;
   const synthesize = async () => { calls++; return result(); };
-  const get = createSpeechCache({ synthesize, now: () => time, ttlMs: 10 });
+  const metrics = createSpeechMetrics();
+  const get = createSpeechCache({ synthesize, metrics, now: () => time, ttlMs: 10 });
   await get(request()); time = 9;
   assert.equal((await get(request())).cacheStatus, 'hit');
   time = 10;
@@ -101,6 +107,7 @@ test('expiry is absolute, pending work survives expiry, and restart starts cold'
   const restarted = createSpeechCache({ synthesize });
   assert.equal((await restarted(request())).cacheStatus, 'miss');
   assert.equal(calls, 3);
+  assert.equal(metrics.snapshot().counters.expired_evictions, 1);
 
   const pending = deferred();
   let activeCalls = 0;
@@ -130,10 +137,12 @@ test('unique-work saturation rejects explicitly while hits and coalesced request
 
 test('cache bypass retains no completed audio and invalid audio never poisons retries', async () => {
   let calls = 0;
-  const get = createSpeechCache({ cacheEnabled: false, synthesize: async () => { calls++; return result(); } });
+  const metrics = createSpeechMetrics();
+  const get = createSpeechCache({ metrics, cacheEnabled: false, synthesize: async () => { calls++; return result(); } });
   assert.equal((await get(request())).cacheStatus, 'bypass');
   await get(request());
   assert.equal(calls, 2);
+  assert.equal(metrics.snapshot().counters.bypassed_requests, 2);
   for (const invalid of [undefined, '', new Uint8Array(), { bogus: true }]) {
     let attempts = 0;
     const retry = createSpeechCache({ synthesize: async () => ++attempts === 1 ? [{ audioContent: invalid }] : result() });
