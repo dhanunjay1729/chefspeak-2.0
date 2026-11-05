@@ -81,6 +81,7 @@ The `android/` and `ios/` folders use Capacitor to package this React app. They 
 1. Install Node.js 22+, then run `npm ci` in the repository root.
 2. Create an ignored `.env.local` from `.env.example` and fill in the existing Firebase **web** app values. Mobile builds require these values at build time. Optionally set `VITE_MOBILE_API_BASE_URL`; it defaults to `https://chefspeak-api.onrender.com` and should use HTTPS.
 3. Run `npm run mobile:sync` after each web code change. This builds the web bundle and copies it into both native projects.
+   Run `npm run mobile:assets` after changing the source images in `assets/` to regenerate the Android and iOS icons and splash screens.
 4. For an Android debug APK, install JDK 21 and Android SDK Platform 36, then run `cd android && ./gradlew assembleDebug`. The APK is written to `android/app/build/outputs/apk/debug/app-debug.apk`. Android Studio can also build and test the project.
 5. Open `ios/App/App.xcodeproj` in Xcode on a Mac to build and test iOS. The hosted build workflow below can compile an unsigned simulator app without a local Mac.
 
