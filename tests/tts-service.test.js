@@ -221,3 +221,42 @@ test('an Audio construction failure releases the URL and allows a later retry', 
   service.stop();
   assert.deepEqual(revoked, created);
 });
+
+test('intentional Pause does not turn a pending play rejection into an error toast', async () => {
+  const pending = deferred();
+  mock.method(FakeAudio.prototype, 'play', FakeAudio.prototype.play)
+    .mock.mockImplementationOnce(async function () {
+      this.paused = false;
+      this.emit('play');
+      await pending.promise;
+    });
+  const service = new TTSService();
+  const speech = service.speak('Step');
+  while (audios.length === 0) await Promise.resolve();
+  service.pause();
+  await service.resume();
+  pending.reject(new DOMException('Interrupted by pause', 'AbortError'));
+  await speech;
+  assert.deepEqual(errors, []);
+  assert.equal(service.isPlaying, true);
+  service.stop();
+});
+
+test('Pause remains effective if a pending play promise later succeeds', async () => {
+  const pending = deferred();
+  const play = FakeAudio.prototype.play;
+  mock.method(FakeAudio.prototype, 'play', async function () {
+    await pending.promise;
+    await play.call(this);
+  });
+  const service = new TTSService();
+  const speech = service.speak('Step');
+  while (audios.length === 0) await Promise.resolve();
+  service.pause();
+  pending.resolve();
+  await speech;
+  assert.equal(service.currentAudio.paused, true);
+  assert.equal(service.isPlaying, false);
+  assert.deepEqual(errors, []);
+  service.stop();
+});

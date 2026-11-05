@@ -9,6 +9,8 @@ export class TTSService {
     this.onProgressChange = null;
     this.playbackRate = 1.0;
     this.requestId = 0;
+    this.playAttempt = 0;
+    this.wantsPlayback = false;
     this.releaseAudio = null;
     this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3002'; // ✅ FIX #12
   }
@@ -19,6 +21,8 @@ export class TTSService {
   stop() {
     // Invalidate pending requests even when no Audio element exists yet.
     this.requestId += 1;
+    this.playAttempt += 1;
+    this.wantsPlayback = false;
     const audio = this.currentAudio;
     this.currentAudio = null;
     if (audio) {
@@ -60,6 +64,10 @@ export class TTSService {
       // Event listeners
       audio.addEventListener('play', () => {
         if (!isCurrent()) return;
+        if (!this.wantsPlayback) {
+          audio.pause();
+          return;
+        }
         this.isPlaying = true;
         this.onPlayStateChange?.(true);
       });
@@ -96,6 +104,8 @@ export class TTSService {
   }
 
   pause() {
+    this.playAttempt += 1;
+    this.wantsPlayback = false;
     if (this.currentAudio) {
       this.currentAudio.pause();
     }
@@ -108,11 +118,14 @@ export class TTSService {
   }
 
   async playAudio(audio, requestId) {
+    const playAttempt = ++this.playAttempt;
+    this.wantsPlayback = true;
     try {
       await audio.play();
-      if (requestId !== this.requestId || this.currentAudio !== audio) audio.pause();
+      if (requestId !== this.requestId || this.currentAudio !== audio || !this.wantsPlayback) audio.pause();
     } catch (error) {
-      if (requestId !== this.requestId || this.currentAudio !== audio) return;
+      if (requestId !== this.requestId || this.currentAudio !== audio || playAttempt !== this.playAttempt) return;
+      this.wantsPlayback = false;
       this.isPlaying = false;
       this.onPlayStateChange?.(false);
       console.error('TTS playback error:', error);
