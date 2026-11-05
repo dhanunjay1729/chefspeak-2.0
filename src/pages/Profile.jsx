@@ -155,7 +155,7 @@ export default function Profile() {
       {/* ✅ Success Toast Notification */}
       {showSaveToast && (
         <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 duration-300">
-          <div className="relative bg-white rounded-2xl shadow-2xl border border-emerald-200 p-4 pr-12 max-w-sm">
+          <div className="relative bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-emerald-200 dark:border-emerald-900 p-4 pr-12 max-w-sm">
             {/* Gradient glow effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 via-teal-500/20 to-emerald-500/20 
                           blur-xl rounded-2xl -z-10 animate-pulse" />
@@ -173,10 +173,10 @@ export default function Profile() {
               
               {/* Text */}
               <div className="flex-1 pt-1">
-                <h4 className="text-sm font-semibold text-zinc-900 mb-0.5">
+                <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-0.5">
                   Profile Updated! 🎉
                 </h4>
-                <p className="text-xs text-zinc-600">
+                <p className="text-xs text-zinc-600 dark:text-zinc-300">
                   Your preferences have been saved successfully.
                 </p>
               </div>
@@ -184,11 +184,11 @@ export default function Profile() {
               {/* Close button */}
               <button
                 onClick={() => setShowSaveToast(false)}
-                className="absolute top-2 right-2 p-1.5 rounded-lg hover:bg-zinc-100 
-                         active:bg-zinc-200 transition-colors group"
+                className="absolute top-2 right-2 p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800
+                         active:bg-zinc-200 dark:active:bg-zinc-700 transition-colors group"
                 aria-label="Close notification"
               >
-                <X size={14} className="text-zinc-400 group-hover:text-zinc-600" />
+                <X size={14} className="text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-100" />
               </button>
             </div>
             
@@ -250,7 +250,7 @@ export default function Profile() {
                         </>
                       )}
                     </ul>
-                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-500">
+                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
                       Future recipe suggestions will respect this preference.
                     </p>
                   </div>
@@ -286,7 +286,7 @@ export default function Profile() {
                     value={form.displayName}
                     onChange={(e) => setField("displayName", e.target.value)}
                     placeholder="Your name"
-                    className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/50 dark:focus:ring-amber-500/30 transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
+                    className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/50 dark:focus:ring-amber-500/30 transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-400"
                   />
                 </div>
 
@@ -383,9 +383,9 @@ export default function Profile() {
                     )
                   }
                   placeholder="e.g., peanuts, dairy, shellfish"
-                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/50 dark:focus:ring-amber-500/30 transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/50 dark:focus:ring-amber-500/30 transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-400"
                 />
-                <p className="mt-2 text-xs font-medium text-zinc-500 dark:text-zinc-500">
+                <p className="mt-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
                   Comma-separated list. Recipes will exclude these ingredients.
                 </p>
               </div>
@@ -406,9 +406,9 @@ export default function Profile() {
                     )
                   }
                   placeholder="e.g., olives, cilantro, mushrooms"
-                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/50 dark:focus:ring-amber-500/30 transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-amber-500/50 dark:focus:ring-amber-500/30 transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-400"
                 />
-                <p className="mt-2 text-xs font-medium text-zinc-500 dark:text-zinc-500">
+                <p className="mt-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
                   Comma-separated list. Recipes will avoid these ingredients when possible.
                 </p>
               </div>

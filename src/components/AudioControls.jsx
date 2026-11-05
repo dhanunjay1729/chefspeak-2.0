@@ -116,9 +116,9 @@ export function AudioControls({ ttsService }) {
                       blur-2xl rounded-3xl transform scale-105 animate-pulse" />
       
       {/* Main card */}
-      <div className="relative bg-gradient-to-br from-white via-rose-50/30 to-amber-50/50 
+      <div className="relative bg-gradient-to-br from-white via-rose-50/30 to-amber-50/50 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-950
                       backdrop-blur-xl rounded-2xl p-5 
-                      border border-white/60 shadow-2xl shadow-rose-500/10
+                      border border-white/60 dark:border-zinc-700 shadow-2xl shadow-rose-500/10 dark:shadow-black/40
                       transition-all duration-300 hover:shadow-rose-500/20">
         
         {/* Decorative gradient orbs */}
@@ -146,11 +146,11 @@ export function AudioControls({ ttsService }) {
                            ${isPlaying ? 'h-3 animate-pulse' : 'h-2'}`}
                  style={{ animationDelay: '600ms' }} />
           </div>
-          <span className="text-xs font-medium text-zinc-600 ml-2">
+          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300 ml-2">
             {isPlaying ? 'Now Playing' : 'Paused'}
           </span>
           <Volume2 className={`w-4 h-4 ml-auto transition-all duration-300 
-                             ${isPlaying ? 'text-rose-500 animate-pulse' : 'text-zinc-400'}`} />
+                             ${isPlaying ? 'text-rose-500 animate-pulse' : 'text-zinc-400 dark:text-zinc-400'}`} />
         </div>
 
         {/* Progress bar container */}
@@ -159,7 +159,7 @@ export function AudioControls({ ttsService }) {
           <div 
             ref={progressBarRef}
             onClick={handleProgressBarClick}
-            className="relative h-3 bg-gradient-to-r from-zinc-200 via-rose-100 to-amber-100 
+            className="relative h-3 bg-gradient-to-r from-zinc-200 via-rose-100 to-amber-100 dark:from-zinc-700 dark:via-zinc-800 dark:to-zinc-700
                        rounded-full cursor-pointer overflow-hidden group
                        shadow-inner"
           >
@@ -209,10 +209,10 @@ export function AudioControls({ ttsService }) {
 
           {/* Time display */}
           <div className="flex items-center justify-between text-sm">
-            <span className="font-mono text-zinc-600 font-medium">
+            <span className="font-mono text-zinc-600 dark:text-zinc-200 font-medium">
               {formatTime(currentTime)}
             </span>
-            <span className="font-mono text-zinc-400 text-xs">
+            <span className="font-mono text-zinc-500 dark:text-zinc-400 text-xs">
               {formatTime(duration)}
             </span>
           </div>
@@ -224,14 +224,14 @@ export function AudioControls({ ttsService }) {
           <button
             onClick={handleRestart}
             className="group relative w-12 h-12 rounded-full 
-                       bg-gradient-to-br from-zinc-100 to-zinc-200
-                       hover:from-zinc-200 hover:to-zinc-300
+                       bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-700 dark:to-zinc-800
+                       hover:from-zinc-200 hover:to-zinc-300 dark:hover:from-zinc-600 dark:hover:to-zinc-700
                        active:scale-95 transition-all duration-200 
                        shadow-md hover:shadow-lg
                        flex items-center justify-center"
             aria-label="Restart"
           >
-            <RotateCcw size={20} className="text-zinc-600 group-hover:text-zinc-800 transition-colors" />
+            <RotateCcw size={20} className="text-zinc-600 dark:text-zinc-100 group-hover:text-zinc-800 dark:group-hover:text-white transition-colors" />
             <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/50 to-transparent 
                           opacity-0 group-hover:opacity-100 transition-opacity" />
           </button>
@@ -245,7 +245,7 @@ export function AudioControls({ ttsService }) {
                        active:scale-95 transition-all duration-200 
                        shadow-xl hover:shadow-2xl shadow-rose-500/50
                        flex items-center justify-center
-                       ring-4 ring-white/50"
+                       ring-4 ring-white/50 dark:ring-zinc-700"
             aria-label={isPlaying ? "Pause" : "Play"}
           >
             {/* Rotating gradient border effect */}
@@ -276,14 +276,14 @@ export function AudioControls({ ttsService }) {
           <button
             onClick={handleSpeedChange}
             className="group relative w-12 h-12 rounded-full 
-                       bg-gradient-to-br from-fuchsia-100 to-fuchsia-200
-                       hover:from-fuchsia-200 hover:to-fuchsia-300
+                       bg-gradient-to-br from-fuchsia-100 to-fuchsia-200 dark:from-fuchsia-950 dark:to-fuchsia-900
+                       hover:from-fuchsia-200 hover:to-fuchsia-300 dark:hover:from-fuchsia-900 dark:hover:to-fuchsia-800
                        active:scale-95 transition-all duration-200 
                        shadow-md hover:shadow-lg hover:shadow-fuchsia-500/20
                        flex items-center justify-center"
             aria-label={`Playback speed: ${playbackRate}x`}
           >
-            <span className="text-sm font-bold text-fuchsia-700 group-hover:text-fuchsia-900 transition-colors">
+            <span className="text-sm font-bold text-fuchsia-700 dark:text-fuchsia-200 group-hover:text-fuchsia-900 dark:group-hover:text-fuchsia-100 transition-colors">
               {playbackRate}x
             </span>
             <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/50 to-transparent 

@@ -277,7 +277,7 @@ export default function RecipeView() {
                 </div>
 
                 {/* Cooking tips */}
-                <div className="text-xs font-medium text-zinc-500 dark:text-zinc-500 italic text-center max-w-xs animate-fade-in-out">
+                <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400 italic text-center max-w-xs animate-fade-in-out">
                   💡 Your delicious recipe is almost ready!
                 </div>
               </div>
