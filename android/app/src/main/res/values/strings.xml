@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ChefSpeak</string>
+    <string name="title_activity_main">ChefSpeak</string>
+    <string name="package_name">com.dhanunjay1729.chefspeak</string>
+    <string name="custom_url_scheme">com.dhanunjay1729.chefspeak</string>
+</resources>

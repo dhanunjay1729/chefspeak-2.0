@@ -4,8 +4,9 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
-import { auth, googleProvider } from "../firebase";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebase";
+import { signInWithGoogle } from "../services/googleSignIn";
 import { Mail, Lock, Loader2, AlertCircle } from "lucide-react";
 import { serverWakeService } from "../services/serverWakeService";
 
@@ -37,19 +38,21 @@ export default function LoginForm({ onLoadingChange }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
+    if (!email || !password) {
+      setError("Please fill in all fields");
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    setLoading(true);
     onLoadingChange?.(true);
 
     try {
-      if (!email || !password) {
-        setError("Please fill in all fields");
-        return;
-      }
-
-      if (!validateEmail(email)) {
-        setError("Please enter a valid email address");
-        return;
-      }
-
       await signInWithEmailAndPassword(auth, email, password);
       
       serverWakeService.wakeServer();
@@ -57,6 +60,8 @@ export default function LoginForm({ onLoadingChange }) {
       
     } catch (err) {
       setError(err.message || "Failed to sign in");
+    } finally {
+      setLoading(false);
       onLoadingChange?.(false);
     }
   };
@@ -66,7 +71,7 @@ export default function LoginForm({ onLoadingChange }) {
     setGoogleLoading(true);
 
     try {
-      await signInWithPopup(auth, googleProvider);
+      await signInWithGoogle();
       
       serverWakeService.wakeServer();
       navigate("/dashboard");
