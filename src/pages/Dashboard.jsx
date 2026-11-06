@@ -8,7 +8,6 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import Header from "../components/Header";
 import { Heart, Salad, ChefHat, Compass, X, Loader2, Sparkles, ArrowRight, Info, Lock } from "lucide-react";
-import { FullPageLoader } from "../components/LoadingSpinner";
 import { recipeApiService } from "../services/recipeApiService";
 import { getLanguage } from "../../shared/languages";
 
@@ -81,36 +80,52 @@ function ActionTile({ icon: Icon, title, desc, onClick, variant = "default" }) {
 export default function Dashboard() {
   const authCtx = useAuth();
   const currentUser = authCtx.currentUser ?? authCtx.user ?? null;
+  const userId = currentUser?.uid;
   const { displayName, dietType, allergies, dislikes, preferredLanguage, loading: profileLoading } = useUserProfile();
   const navigate = useNavigate();
   const cookingSession = readCookingSession(currentUser?.uid);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [recentError, setRecentError] = useState("");
   const [removing, setRemoving] = useState({});
   const [showComingSoonAlert, setShowComingSoonAlert] = useState(false);
   const [showLoginAlert, setShowLoginAlert] = useState(false);
   const [recommendations, setRecommendations] = useState([]);
   const [loadingRecs, setLoadingRecs] = useState(false);
+  const [recommendationsError, setRecommendationsError] = useState("");
   
   // ✅ PAGINATION STATE
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 8;
 
+  // Optional AI recommendations must not delay history or dashboard navigation.
   useEffect(() => {
     let mounted = true;
-    (async () => {
-      if (profileLoading) return;
-      if (!currentUser) {
-        if (mounted) setLoading(false);
-        return;
-      }
-      try {
-        const data = await getRecentDishes(currentUser.uid, { limit: 20 });
-        if (mounted) setItems(data);
+    setItems([]);
+    setCurrentPage(1);
+    setRecentError("");
+    setLoading(Boolean(userId));
+    if (userId) {
+      getRecentDishes(userId, { limit: 20 })
+        .then(data => { if (mounted) setItems(data); })
+        .catch(err => {
+          console.error("Recent dishes fetch error:", err);
+          if (mounted) setRecentError("Recent creations are unavailable right now. You can still start a new recipe.");
+        })
+        .finally(() => { if (mounted) setLoading(false); });
+    }
+    return () => { mounted = false; };
+  }, [userId]);
 
-        // Fetch favorites for recommendations
-        if (mounted) setLoadingRecs(true);
-        const favs = await getFavoriteDishes(currentUser.uid, { limit: 10 });
+  useEffect(() => {
+    let mounted = true;
+    setRecommendations([]);
+    setRecommendationsError("");
+    setLoadingRecs(Boolean(userId) && !profileLoading);
+    (async () => {
+      if (profileLoading || !userId) return;
+      try {
+        const favs = await getFavoriteDishes(userId, { limit: 10 });
         if (favs.length > 0 && mounted) {
           const favNames = favs.map(f => f.dishName);
           const prefs = { dietType, allergies, dislikes };
@@ -118,18 +133,16 @@ export default function Dashboard() {
           if (mounted) setRecommendations(recs);
         }
       } catch (err) {
-        console.error("Dashboard fetch error:", err);
+        console.error("Dashboard recommendations fetch error:", err);
+        if (mounted) setRecommendationsError("Recommendations are unavailable right now. You can still start a recipe.");
       } finally {
-        if (mounted) {
-          setLoading(false);
-          setLoadingRecs(false);
-        }
+        if (mounted) setLoadingRecs(false);
       }
     })();
     return () => {
       mounted = false;
     };
-  }, [currentUser, profileLoading, preferredLanguage, dietType, allergies, dislikes]);
+  }, [userId, profileLoading, preferredLanguage, dietType, allergies, dislikes]);
 
   // ✅ PAGINATION LOGIC
   const paginatedItems = useMemo(() => {
@@ -193,11 +206,6 @@ export default function Dashboard() {
     }
   };
 
-  // ✅ SHOW FULL-PAGE LOADER
-  if (loading && currentUser) {
-    return <FullPageLoader text="Preparing your kitchen..." />;
-  }
-
   const firstName = displayName ? displayName.split(' ')[0] : '';
 
   return (
@@ -247,12 +255,12 @@ export default function Dashboard() {
           <section className="rounded-3xl border border-amber-200 dark:border-amber-900 p-6 bg-amber-50 dark:bg-amber-950/30">
             <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Continue cooking</h2>
             <p className="my-2 text-zinc-600 dark:text-zinc-300">{cookingSession.recipe.dishName} · Step {cookingSession.currentStepIndex + 1} of {cookingSession.recipe.recipeSteps.length}</p>
-            <button onClick={() => {
+            <button disabled={profileLoading} onClick={() => {
               const savedLanguage = getLanguage(cookingSession.recipe.language)?.code;
               const translatedRecipePath = cookingSession.path === '/assistant' && cookingSession.savedRecipeId &&
                 savedLanguage !== preferredLanguage ? `/recipe/${cookingSession.savedRecipeId}` : cookingSession.path;
               navigate(translatedRecipePath);
-            }} className="rounded-xl px-5 py-2 bg-amber-600 text-white font-semibold">Resume recipe</button>
+            }} className="rounded-xl px-5 py-2 bg-amber-600 text-white font-semibold disabled:opacity-50">{profileLoading ? 'Loading preferences...' : 'Resume recipe'}</button>
           </section>
         )}
 
@@ -289,7 +297,7 @@ export default function Dashboard() {
         </div>
 
         {/* Recommendations Section */}
-        {currentUser && recommendations.length > 0 && (
+        {currentUser && (loadingRecs || recommendationsError || recommendations.length > 0) && (
           <section className="space-y-6">
             <div className="flex items-center gap-2">
               <Sparkles size={24} className="text-amber-500" />
@@ -300,9 +308,14 @@ export default function Dashboard() {
             
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
               {loadingRecs ? (
-                [1, 2, 3].map(i => (
-                  <div key={i} className="h-32 rounded-3xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 animate-pulse" />
-                ))
+                <>
+                  <span role="status" className="sr-only">Finding recommendations...</span>
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="h-32 rounded-3xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 animate-pulse" />
+                  ))}
+                </>
+              ) : recommendationsError ? (
+                <p role="status" className="sm:col-span-2 md:col-span-3 text-zinc-600 dark:text-zinc-400">{recommendationsError}</p>
               ) : (
                 recommendations.map((rec, i) => (
                   <button
@@ -323,7 +336,7 @@ export default function Dashboard() {
             </div>
           </section>
         )}
-        {currentUser && recommendations.length === 0 && !loadingRecs && items.length > 0 && (
+        {currentUser && recommendations.length === 0 && !loadingRecs && !recommendationsError && items.length > 0 && (
            <section className="space-y-6">
              <div className="flex items-center gap-2">
                <Sparkles size={24} className="text-amber-500" />
@@ -349,11 +362,13 @@ export default function Dashboard() {
           </div>
 
           {loading ? (
-            <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            <div role="status" aria-label="Loading recent creations" className="grid gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="h-28 rounded-3xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 animate-pulse" />
               ))}
             </div>
+          ) : recentError ? (
+            <p role="status" className="text-zinc-600 dark:text-zinc-400">{recentError}</p>
           ) : items.length === 0 ? (
             <div className="rounded-3xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-12 text-center">
               <p className="text-zinc-600 dark:text-zinc-400 text-lg">
